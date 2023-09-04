@@ -14,7 +14,6 @@ and a solver and returns a response.
 ```julia
 using SolverAPI
 
-import MathOptInterface as MOI
 import HiGHS
 
 tiny_min = Dict(
@@ -69,6 +68,16 @@ Required fields:
 - `constraints`: [Array] A list of constraints. Each constraint
   contains an operation and a set of arguments, such as `["==", "x", 1]`.
 - `objectives`: [Array] The objective. 
+
+#### Options
+We always support the following options:
+- `silent`: [Bool] Controls if the solver prints any logs.
+- `time_limit_sec`: [Float64] Limits the total time expended. The optimization
+  returns a `TIME_LIMIT` status.
+- `print_only`: [Bool] If set to true the model will only be printed
+  and not solved.
+- `print_format`: [String] If and how the model should be
+  printed. Currently supported formats: default, LaTex, MOF, LP, MPS, NL.
 
 ### Response
 Response format examples:
