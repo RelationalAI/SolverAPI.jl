@@ -1,0 +1,2 @@
+{"version":"0.1","sense":"min","variables":["x"],"constraints":[["==","x",1],["Int","x"]],"objectives":[],"options":{"time_limit_sec":60,"solver":"HiGHS","silent":0,"print_format":"MOF"}}
+

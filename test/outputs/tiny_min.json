@@ -1,0 +1,3 @@
+{"version": "0.1", "model_string":"{\"name\":\"MathOptFormat Model\",\"version\":{\"major\":1,\"minor\":4},\"variables\":[{\"name\":\"x\"}],\"objective\":{\"sense\":\"min\",\"function\":{\"type\":\"Variable\",\"name\":\"x\"}},\"constraints\":[{\"name\":\"c1\",\"function\":{\"type\":\"ScalarAffineFunction\",\"terms\":[{\"coefficient\":1.0,\"variable\":\"x\"}],\"constant\":0.0},\"set\":{\"type\":\"EqualTo\",\"value\":1.0}},{\"function\":{\"type\":\"Variable\",\"name\":\"x\"},\"set\":{\"type\":\"Integer\"}}]}","termination_status":"OPTIMAL","results":[{"primal_status": "FEASIBLE_POINT", "sol_names":["\"x\""],"sol_values":[1.0],"objective_value":1.0}]}
+
+

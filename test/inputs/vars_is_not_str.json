@@ -1,0 +1,2 @@
+{"version":"0.1","sense":"feas","variables":[0],"constraints":[["==","x",1],["Int","x"]],"objectives":[],"options":{"solver":"MiniZinc"}}
+
