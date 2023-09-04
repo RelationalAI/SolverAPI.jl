@@ -23,7 +23,8 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-          - windows-latest
+          # - windows-latest : Currently not supported because of our test-dependency `MiniZinc`.
+          # https://github.com/RelationalAI/SolverAPI.jl/actions/runs/6074312722/job/16478030046
         arch:
           - x64
     steps:
