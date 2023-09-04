@@ -195,6 +195,8 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
                e isa MOI.OptimizeInProgress ||
                e isa MOI.InvalidCallbackUsage
             throw(Error(Domain, sprint(Base.showerror, e)))
+        elseif e isa ErrorException
+            throw(Error(Other, e.msg))
         else
             rethrow()
         end
