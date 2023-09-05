@@ -287,12 +287,16 @@ function validate(json::Request)#::Vector{Error}
         return out
     end
 
+    if !isa(json.version, String)
+        push!(out, Error(InvalidFormat, "Invalid `version` field. Must be a string."))
+    end
+
     if json.version != "0.1"
         push!(
             out,
             Error(
                 InvalidFormat,
-                "Invalid version `$(json.version)`. Only `0.1` is supported.",
+                """Invalid version `$(repr(json.version))`. Only `"0.1"` is supported.""",
             ),
         )
     end
