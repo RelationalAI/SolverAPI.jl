@@ -109,8 +109,8 @@ function response(json::Request, model::MOI.ModelLike; version="0.1", kw...)
         if status in (MOI.OPTIMAL, MOI.LOCALLY_SOLVED)
             vars = MOI.get(model, MOI.ListOfVariableIndices())
             sol = MOI.get(model, MOI.VariablePrimal(), vars)
-            results[idx]["sol_names"] = [string('\"', v, '\"') for v in json.variables]
-            results[idx]["sol_values"] = sol
+            results[idx]["names"] = [string('\"', v, '\"') for v in json.variables]
+            results[idx]["values"] = sol
 
             if json.sense != "feas"
                 results[idx]["objective_value"] = MOI.get(model, MOI.ObjectiveValue())
