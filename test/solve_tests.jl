@@ -34,7 +34,7 @@ end # end of setup module.
     import JSON3
 
     # names of JSON files in inputs/ and outputs/ folders
-    json_names = ["feas_range", "min_range", "tiny_min", "tiny_feas", "tiny_infeas"]
+    json_names = ["feas_range", "min_range", "tiny_min", "tiny_feas", "tiny_infeas","simple_lp","n_queens"]
 
     @testset "$j" for j in json_names
         input = read_json("inputs", j)
