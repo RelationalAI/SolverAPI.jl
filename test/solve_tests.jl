@@ -39,7 +39,7 @@ end # end of setup module.
     @testset "$j" for j in json_names
         input = read_json("inputs", j)
         output = run_solve(input)
-        @test issetequal(JSON3.read(output), JSON3.read(read_json("outputs", j)))
+        @test JSON3.read(output) == JSON3.read(read_json("outputs", j))
     end
 end
 
