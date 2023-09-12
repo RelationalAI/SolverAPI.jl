@@ -29,23 +29,19 @@ An `@enum` of possible errors types.
 
 ## Values
 
-- `InvalidFormat`: The request is syntactically incorrect. Expected
-  fields might be missing or of the wrong type.
+  - `InvalidFormat`: The request is syntactically incorrect. Expected
+    fields might be missing or of the wrong type.
 
-- `InvalidModel`: The model is semantically incorrect. For example, an
-  unknown `sense` was provided.
-
-- `Unsupported`: Some unsupported feature was used. That includes
-  using unsupported attributes for a solver or specifying an
-  unsupported solver.
-
-- `NotAllowed`: An operation is supported but cannot be applied in the
-  current state of the model
-
-- `Domain`: A domain-specific, internal error occurred. For example, a
-  function cannot be converted to either linear or quadratic form.
-
-- `Other`: An error that does not fit in any of the above categories.
+  - `InvalidModel`: The model is semantically incorrect. For example, an
+    unknown `sense` was provided.
+  - `Unsupported`: Some unsupported feature was used. That includes
+    using unsupported attributes for a solver or specifying an
+    unsupported solver.
+  - `NotAllowed`: An operation is supported but cannot be applied in the
+    current state of the model
+  - `Domain`: A domain-specific, internal error occurred. For example, a
+    function cannot be converted to either linear or quadratic form.
+  - `Other`: An error that does not fit in any of the above categories.
 """
 @enum ErrorType InvalidFormat InvalidModel Unsupported NotAllowed Domain Other
 
@@ -60,18 +56,20 @@ end
 Return a response
 
 ## Args
-- `request::SolverAPI.Request`: [optionally] The request that was received.
-- `model::MOI.ModelLike`: [optionally] The model that was solved.
+
+  - `request::SolverAPI.Request`: [optionally] The request that was received.
+  - `model::MOI.ModelLike`: [optionally] The model that was solved.
 
 ## Keyword Args
-- `version::String`: The version of the API.
-- `termination_status::MOI.TerminationStatus`: The termination status of the solver.
-- `errors::SolverAPI.Error`: A vector of `Error`s.
+
+  - `version::String`: The version of the API.
+  - `termination_status::MOI.TerminationStatus`: The termination status of the solver.
+  - `errors::SolverAPI.Error`: A vector of `Error`s.
 """
 function response(;
-    version="0.1",
-    termination_status=MOI.OTHER_ERROR,
-    errors::Vector{Error}=Error[],
+    version = "0.1",
+    termination_status = MOI.OTHER_ERROR,
+    errors::Vector{Error} = Error[],
 )
     pairs = Pair{String,Any}["version"=>version, "termination_status"=>termination_status]
     if !isempty(errors)
@@ -79,8 +77,8 @@ function response(;
     end
     return Dict(pairs)
 end
-response(error::Error; kw...) = response(; errors=[error], kw...)
-function response(json::Request, model::MOI.ModelLike; version="0.1", kw...)
+response(error::Error; kw...) = response(; errors = [error], kw...)
+function response(json::Request, model::MOI.ModelLike; version = "0.1", kw...)
     res = Dict{String,Any}()
 
     res["version"] = version
@@ -101,9 +99,9 @@ function response(json::Request, model::MOI.ModelLike; version="0.1", kw...)
 
     result_count = MOI.get(model, MOI.ResultCount())
 
-    results = [Dict{String,Any}() for _ = 1:result_count]
+    results = [Dict{String,Any}() for _ in 1:result_count]
 
-    for idx = 1:result_count
+    for idx in 1:result_count
         results[idx]["primal_status"] = MOI.get(model, MOI.PrimalStatus(idx))
 
         if status in (MOI.OPTIMAL, MOI.LOCALLY_SOLVED)
@@ -128,16 +126,15 @@ end
 """
     serialize([io], response::Response)
 
-Serialize the `response`. 
+Serialize the `response`.
 
 ## Args
-- `io::IO`: An optional IO stream to write to. If not provided, a
-  `Vector{UInt8}` is returned.
-- `response`: A `SolverAPI.Response` to serialize.
+
+  - `io::IO`: An optional IO stream to write to. If not provided, a
+    `Vector{UInt8}` is returned.
+  - `response`: A `SolverAPI.Response` to serialize.
 """
-function serialize(response::Response)
-    return Vector{UInt8}(JSON3.write(response))
-end
+serialize(response::Response) = Vector{UInt8}(JSON3.write(response))
 serialize(io::IO, response::Response) = JSON3.write(io, response)
 
 """
@@ -147,9 +144,7 @@ serialize(io::IO, response::Response) = JSON3.write(io, response)
 Deserialize `body` to an `Request`. Returns an instances that can be
 used with `solve` or `print_model`.
 """
-function deserialize(body::Vector{UInt8})
-    return JSON3.read(body)
-end
+deserialize(body::Vector{UInt8}) = JSON3.read(body)
 deserialize(body::String) = deserialize(Vector{UInt8}(body))
 
 """
@@ -160,11 +155,11 @@ gracefully and included in `Response`.
 
 ## Args
 
-- `fn`: [Optionally] A function to call before solving the problem. This is useful
-  for setting up custom solver options. The function is called with
-  the `MOI.ModelLike` model and should return `Nothing`.
-- `request`: A `SolverAPI.Request` specifying the optimization problem.
-- `solver`: A `MOI.AbstractOptimizer` to use to solve the problem.
+  - `fn`: [Optionally] A function to call before solving the problem. This is useful
+    for setting up custom solver options. The function is called with
+    the `MOI.ModelLike` model and should return `Nothing`.
+  - `request`: A `SolverAPI.Request` specifying the optimization problem.
+  - `solver`: A `MOI.AbstractOptimizer` to use to solve the problem.
 """
 function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
     errors = validate(json)
@@ -212,51 +207,56 @@ solve(request::Dict, solver::MOI.AbstractOptimizer) =
     print_model(model::MOI.ModelLike, format::String)::String
 
 Print the `model`. `format` options (case-insensitive) are:
-- `default`
-- `LaTeX`
-- `MOF`
-- `LP`
-- `MPS`
-- `NL`
+
+  - `MOI` (MathOptInterface default printout)
+  - `LaTeX` (MathOptInterface default LaTeX printout)
+  - `MOF` (MathOptFormat file)
+  - `LP` (LP file)
+  - `MPS` (MPS file)
+  - `NL` (NL file)
 """
 function print_model(model::MOI.ModelLike, format::String)
-    format = lowercase(format)
-    if format == "default" || format == "latex"
-        mime = MIME(format == "latex" ? "text/latex" : "text/plain")
-        options =
-            MOI.Utilities._PrintOptions(mime; simplify_coefficients=true, print_types=false)
+    format_lower = lowercase(format)
+    if format_lower == "moi" || format_lower == "latex"
+        mime = MIME(format_lower == "latex" ? "text/latex" : "text/plain")
+        options = MOI.Utilities._PrintOptions(
+            mime;
+            simplify_coefficients = true,
+            print_types = false,
+        )
         return sprint() do io
-            MOI.Utilities._print_model(io, options, model)
+            return MOI.Utilities._print_model(io, options, model)
         end
-    elseif format == "latex"
+    elseif format_lower == "latex"
         # NOTE: there are options for latex_formulation, e.g. don't print MOI function/set types
         # https://jump.dev/MathOptInterface.jl/dev/submodules/Utilities/reference/#MathOptInterface.Utilities.latex_formulation
         return sprint(print, MOI.Utilities.latex_formulation(model))
-    elseif format == "mof"
-        options = (; format=MOI.FileFormats.FORMAT_MOF, print_compact=true)
-    elseif format == "lp"
-        options = (; format=MOI.FileFormats.FORMAT_LP)
-    elseif format == "mps"
-        options = (; format=MOI.FileFormats.FORMAT_MPS)
-    elseif format == "nl"
-        options = (; format=MOI.FileFormats.FORMAT_NL)
+    elseif format_lower == "mof"
+        options = (; format = MOI.FileFormats.FORMAT_MOF, print_compact = true)
+    elseif format_lower == "lp"
+        options = (; format = MOI.FileFormats.FORMAT_LP)
+    elseif format_lower == "mps"
+        options = (; format = MOI.FileFormats.FORMAT_MPS)
+    elseif format_lower == "nl"
+        options = (; format = MOI.FileFormats.FORMAT_NL)
     else
-        throw(Error(Unsupported, "File type $format not supported."))
+        throw(Error(Unsupported, "File type \"$format\" not supported."))
     end
     dest = MOI.FileFormats.Model(; options...)
     MOI.copy_to(dest, model)
     return sprint(write, dest)
 end
-function print_model(request::Request; T=Float64)
+function print_model(request::Request; T = Float64)
     errors = validate(request)
-
     if length(errors) > 0
         throw(CompositeException(errors))
     end
 
     options = get(() -> Dict{String,Any}(), request, :options)
-    format = get(options, :print_format, "default")
+    # Default to MOI format.
+    format = get(options, :print_format, "MOI")
 
+    # TODO cleanup/refactor solver_info logic.
     use_indicator = T == Float64
     solver_info = Dict{Symbol,Any}(:use_indicator => use_indicator)
     model = MOI.Utilities.Model{T}()
@@ -266,76 +266,57 @@ function print_model(request::Request; T=Float64)
 end
 print_model(request::Dict) = print_model(JSON3.read(JSON3.write(request)))
 
-
 # Internal
 # ========================================================================================
 
 function validate(json::Request)#::Vector{Error}
     out = Error[]
+    # Helper for adding errors
+    _err(msg::String) = push!(out, Error(InvalidFormat, msg))
     valid_shape = true
 
     # Syntax.
     for k in [:version, :sense, :variables, :constraints, :objectives]
         if !haskey(json, k)
             valid_shape = false
-            push!(out, Error(InvalidFormat, "Missing required field `$(k)`."))
+            _err("Missing required field `$(k)`.")
         end
     end
 
     # If the shape is not valid we can't continue.
-    if !valid_shape
-        return out
-    end
+    valid_shape || return out
 
     if !isa(json.version, String)
-        push!(out, Error(InvalidFormat, "Invalid `version` field. Must be a string."))
+        _err("Invalid `version` field. Must be a string.")
     end
 
     if json.version != "0.1"
-        push!(
-            out,
-            Error(
-                InvalidFormat,
-                """Invalid version `$(repr(json.version))`. Only `"0.1"` is supported.""",
-            ),
-        )
+        _err("Invalid version `$(repr(json.version))`. Only `\"0.1\"` is supported.")
     end
 
     if haskey(json, :options) && !isa(json.options, JSON3.Object)
-        push!(out, Error(InvalidFormat, "Invalid `options` field. Must be an object."))
+        _err("Invalid `options` field. Must be an object.")
     end
 
     for k in [:variables, :constraints, :objectives]
         if !isa(json[k], JSON3.Array)
-            push!(out, Error(InvalidFormat, "Invalid `$(k)` field. Must be an array."))
+            _err("Invalid `$(k)` field. Must be an array.")
         end
     end
 
     if any(si -> !isa(si, String), json.variables)
-        push!(out, Error(InvalidFormat, "Variables must be of type `String`."))
+        _err("Variables must be of type `String`.")
     end
 
     # Semantics.
     if !in(json.sense, ["feas", "min", "max"])
-        push!(
-            out,
-            Error(
-                InvalidModel,
-                "Invalid `sense` field. Must be one of `feas`, `min`, or `max`.",
-            ),
-        )
+        _err("Invalid `sense` field. Must be one of `feas`, `min`, or `max`.")
     end
 
     if haskey(json, :options)
         for (T, k) in [(String, :print_format), (Number, :time_limit_sec)]
             if haskey(json.options, k) && !isa(json.options[k], T)
-                push!(
-                    out,
-                    Error(
-                        InvalidFormat,
-                        "Invalid `options.$(k)` field. Must be of type `$(T)`.",
-                    ),
-                )
+                _err("Invalid `options.$(k)` field. Must be of type `$(T)`.")
             end
         end
 
@@ -344,13 +325,7 @@ function validate(json::Request)#::Vector{Error}
                 val = json.options[k]
                 # We allow `0` and `1` for convenience.
                 if !isa(val, Bool) && val isa Number && val != 0 && val != 1
-                    push!(
-                        out,
-                        Error(
-                            InvalidFormat,
-                            "Invalid `options.$(k)` field. Must be a boolean.",
-                        ),
-                    )
+                    _err("Invalid `options.$(k)` field. Must be a boolean.")
                 end
             end
         end
@@ -358,36 +333,26 @@ function validate(json::Request)#::Vector{Error}
 
     if json.sense == "feas"
         if !isempty(json.objectives)
-            push!(
-                out,
-                Error(InvalidModel, "Objectives must be empty when `sense` is `feas`."),
-            )
+            _err("Objectives must be empty when `sense` is `feas`.")
         end
     else
         if length(json.objectives) != 1
-            push!(out, Error(InvalidModel, "Only a single objective is supported."))
+            _err("Only a single objective is supported.")
         end
     end
 
     for con in json.constraints
         if first(con) == "range"
             if length(con) != 5
-                push!(
-                    out,
-                    Error(InvalidModel, "The `range` constraint expects 4 arguments."),
-                )
+                _err("The `range` constraint expects 4 arguments.")
             elseif con[4] != 1
-                push!(
-                    out,
-                    Error(InvalidModel, "The `range` constraint expects a step size of 1."),
-                )
+                _err("The `range` constraint expects a step size of 1.")
             end
         end
     end
 
     return out
 end
-
 
 function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, Dict{Symbol, Any}, MOI.ModelLike}
     solver_info = Dict{Symbol,Any}()
@@ -403,7 +368,7 @@ function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, 
         solver_info[:use_indicator] = true
     end
 
-    model = MOI.instantiate(() -> solver; with_cache_type=T, with_bridge_type=T)
+    model = MOI.instantiate(() -> solver; with_cache_type = T, with_bridge_type = T)
 
     for (key, val) in options
         if key in [:solver, :print_format, :print_only]
@@ -524,17 +489,6 @@ function canonicalize_SNF(::Type{T}, f) where {T<:Real}
     return f
 end
 
-# TODO(cdc) experiment more:
-# function canonicalize_SNF(::Type{T}, f) where {T <: Real}
-#     try
-#         f = convert(MOI.ScalarQuadraticFunction{T}, f)
-#         try
-#             f = convert(MOI.ScalarAffineFunction{T}, f)
-#         catch end
-#     catch end
-#     return f
-# end
-
 function add_obj!(
     ::Type{T},
     model::MOI.ModelLike,
@@ -570,12 +524,8 @@ function add_cons!(
 
     function _check_v_type(v)
         if !(v isa MOI.VariableIndex)
-            throw(
-                Error(
-                    InvalidModel,
-                    "Variable $v must be of type MOI.VariableIndex, not $(typeof(v)).",
-                ),
-            )
+            msg = "Variable $v must be of type MOI.VariableIndex, not $(typeof(v))."
+            throw(Error(InvalidModel, msg))
         end
     end
 
@@ -583,7 +533,9 @@ function add_cons!(
         for i in eachindex(a)
             i == 1 && continue
             if a[i] isa Bool
-                a[i] || push!(out, Error(InvalidModel, "Model is infeasible."))
+                if !a[i]
+                    throw(Error(InvalidModel, "Model is infeasible."))
+                end
             else
                 add_cons!(T, model, a[i], vars_map, solver_info)
             end
@@ -611,8 +563,9 @@ function add_cons!(
     elseif head == "range"
         v = json_to_snf(a[5], vars_map)
 
-        (a[2] isa Int && a[3] isa Int) ||
+        if !(a[2] isa Int && a[3] isa Int)
             throw(Error(InvalidModel, "The `range` constraint expects integer bounds."))
+        end
         _check_v_type(v)
 
         MOI.add_constraint(model, v, MOI.Integer())
@@ -620,34 +573,29 @@ function add_cons!(
     elseif head == "implies" && solver_info[:use_indicator]
         # TODO maybe just check if model supports indicator constraints
         # use an MOI indicator constraint
-        length(a) == 3 ||
+        if length(a) != 3
             throw(Error(InvalidModel, "The `implies` constraint expects 2 arguments."))
+        end
         f = json_to_snf(a[2], vars_map)
         g = json_to_snf(a[3], vars_map)
-        (f.head == :(==) && length(f.args) == 2) || throw(
-            Error(
-                InvalidModel,
-                "The first argument of the `implies` constraint expects to be converted to an equality SNF with 2 arguments.",
-            ),
-        )
+        if !(f.head == :(==) && length(f.args) == 2)
+            msg = "The first argument of the `implies` constraint expects to be converted to an equality SNF with 2 arguments."
+            throw(Error(InvalidModel, msg))
+        end
 
         v, b = f.args
         _check_v_type(v)
-        (b == 1 || b == 0) || throw(
-            Error(
-                InvalidModel,
-                "The second argument of the derived equality SNF from the `implies` constraint expects a binary variable.",
-            ),
-        )
+        if b != 1 && b != 0
+            msg = "The second argument of the derived equality SNF from the `implies` constraint expects a binary variable."
+            throw(Error(InvalidModel, msg))
+        end
 
         A = (b == 1) ? MOI.ACTIVATE_ON_ONE : MOI.ACTIVATE_ON_ZERO
         S1 = get(ineq_to_moi, g.head, nothing)
-        (!isnothing(S1) && length(g.args) == 2) || throw(
-            Error(
-                InvalidModel,
-                "The second argument of the `implies` constraint expects to be converted to an (in)equality SNF with 2 arguments.",
-            ),
-        )
+        if isnothing(S1) || length(g.args) != 2
+            msg = "The second argument of the `implies` constraint expects to be converted to an (in)equality SNF with 2 arguments."
+            throw(Error(InvalidModel, msg))
+        end
 
         h = shift_terms(T, g.args)
         vaf = MOI.Utilities.operate(vcat, T, v, h)
@@ -663,12 +611,8 @@ function add_cons!(
             g = shift_terms(T, f.args)
             s = S(zero(T))
             if !MOI.supports_constraint(model, typeof(g), typeof(s))
-                throw(
-                    Error(
-                        Unsupported,
-                        "Constraint $g in $s isn't supported by this solver.",
-                    ),
-                )
+                msg = "Constraint $g in $s isn't supported by this solver."
+                throw(Error(Unsupported, msg))
             end
             ci = MOI.Utilities.normalize_and_add_constraint(model, g, s)
         end
@@ -679,7 +623,7 @@ end
 ineq_to_moi = Dict(:<= => MOI.LessThan, :>= => MOI.GreaterThan, :(==) => MOI.EqualTo)
 
 function shift_terms(::Type{T}, args::Vector) where {T<:Real}
-    @assert length(args) == 2 # This should never happen. 
+    @assert length(args) == 2 # This should never happen.
     g1 = canonicalize_SNF(T, args[1])
     g2 = canonicalize_SNF(T, args[2])
     return MOI.Utilities.operate(-, T, g1, g2)
