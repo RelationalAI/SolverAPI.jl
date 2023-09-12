@@ -97,10 +97,10 @@ Response format examples:
     {
       "objective_value": 0.0,
       "primal_status": "FEASIBLE_POINT",
-      "sol_names": [
+      "names": [
         "\"x\""
       ],
-      "sol_values": [
+      "values": [
         1
       ]
     }
@@ -141,11 +141,10 @@ Required fields:
 
 Optional fields:
 
-  - `results`: [Array] The results array. Depending on
-    the optimization none, one, or multiple results will be
-    present. Each result will contain multiple fields describing the
-    solution, such as `objective_value`, `primal_status`,
-    `sol_names`, and `sol_values`.
+  - `results`: [Array] The results array. Zero, one, or multiple
+    results will be present. Each result will contain multiple fields
+    describing the solution, such as `objective_value`, `primal_status`,
+    `names`, and `values`.
   - `errors`: [Array] None, one, or multiple errors that were present.
   - `model_string`: [String] If requested via `print_format` the model
     as a string.

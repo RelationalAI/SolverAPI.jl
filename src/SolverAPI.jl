@@ -3,11 +3,9 @@
 
 This module provides an interface to solve optimization problems.
 
-Exports `solve`, `print_model`, `response`, `serialize`, and
-`deserialize`.
+Exports `solve`, `print_model`, `response`, `serialize`, and `deserialize`.
 
-Our format is based on JSON. For examples, please see `tests/inputs`
-and `tests/outputs`.
+Our format is based on JSON. For examples, see `tests/inputs` and `tests/outputs`.
 """
 module SolverAPI
 
@@ -31,7 +29,6 @@ An `@enum` of possible errors types.
 
   - `InvalidFormat`: The request is syntactically incorrect. Expected
     fields might be missing or of the wrong type.
-
   - `InvalidModel`: The model is semantically incorrect. For example, an
     unknown `sense` was provided.
   - `Unsupported`: Some unsupported feature was used. That includes
