@@ -8,6 +8,7 @@ Currently, JSON is used for serialization, and only optimization
 solvers and constraint programming solvers are supported.
 
 ## API
+
 The main API is `solve` which takes a JSON request or Julia dictionary
 and a solver and returns a response.
 
@@ -17,12 +18,12 @@ using SolverAPI
 import HiGHS
 
 tiny_min = Dict(
-        "version" => "0.1",
-        "sense" => "min",
-        "variables" => ["x"],
-        "constraints" => [["==", "x", 1], ["Int", "x"]],
-        "objectives" => ["x"],
-    )
+    "version" => "0.1",
+    "sense" => "min",
+    "variables" => ["x"],
+    "constraints" => [["==", "x", 1], ["Int", "x"]],
+    "objectives" => ["x"],
+)
 
 solve(tiny_min, HiGHS.Optimizer())
 ```
@@ -30,7 +31,9 @@ solve(tiny_min, HiGHS.Optimizer())
 ## Format
 
 ### Request
+
 Request format example:
+
 ```json
 {
   "version": "0.1",
@@ -58,29 +61,35 @@ Request format example:
   }
 }
 ```
+
 Required fields:
-- `version`: [String] The version of the API that is used.
-- `options`: [Array] Options, such as the time limit, if the
-  model should be printed, or general solver attributes. For a
-  complete list, please refer to the documentation of the solver.
-- `sense`: [String] One of `feas`, `min`, or `max`
-- `variables`: [Array] A list of variables that are used in the model.
-- `constraints`: [Array] A list of constraints. Each constraint
-  contains an operation and a set of arguments, such as `["==", "x", 1]`.
-- `objectives`: [Array] The objective. 
+
+  - `version`: [String] The version of the API that is used.
+  - `options`: [Array] Options, such as the time limit, if the
+    model should be printed, or general solver attributes. For a
+    complete list, please refer to the documentation of the solver.
+  - `sense`: [String] One of `feas`, `min`, or `max`
+  - `variables`: [Array] A list of variables that are used in the model.
+  - `constraints`: [Array] A list of constraints. Each constraint
+    contains an operation and a set of arguments, such as `["==", "x", 1]`.
+  - `objectives`: [Array] The objective.
 
 #### Options
+
 We always support the following options:
-- `silent`: [Bool] Controls if the solver prints any logs.
-- `time_limit_sec`: [Float64] Limits the total time expended. The optimization
-  returns a `TIME_LIMIT` status.
-- `print_only`: [Bool] If set to true the model will only be printed
-  and not solved.
-- `print_format`: [String] If and how the model should be
-  printed. Currently supported formats: default, LaTex, MOF, LP, MPS, NL.
+
+  - `silent`: [Bool] Controls if the solver prints any logs.
+  - `time_limit_sec`: [Float64] Limits the total time expended. The optimization
+    returns a `TIME_LIMIT` status.
+  - `print_only`: [Bool] If set to true the model will only be printed
+    and not solved.
+  - `print_format`: [String] If and how the model should be
+    printed. Currently supported formats: MOI, LaTeX, MOF, LP, MPS, NL.
 
 ### Response
+
 Response format examples:
+
 ```json
 {
   "version": "0.1",
@@ -88,10 +97,10 @@ Response format examples:
     {
       "objective_value": 0.0,
       "primal_status": "FEASIBLE_POINT",
-      "sol_names": [
+      "names": [
         "\"x\""
       ],
-      "sol_values": [
+      "values": [
         1
       ]
     }
@@ -99,7 +108,9 @@ Response format examples:
   "termination_status": "OPTIMAL"
 }
 ```
+
 Example with a model error:
+
 ```json
 {
   "version": "0.1",
@@ -114,6 +125,7 @@ Example with a model error:
 ```
 
 Example with printing and no solving:
+
 ```json
 {
   "model_string": "{\"name\":\"MathOptFormat Model\",\"version\":{\"major\":1,\"minor\":4},\"variables\":[{\"name\":\"x\"}],\"objective\":{\"sense\":\"min\",\"function\":{\"type\":\"Variable\",\"name\":\"x\"}},\"constraints\":[{\"name\":\"c1\",\"function\":{\"type\":\"ScalarAffineFunction\",\"terms\":[{\"coefficient\":1.0,\"variable\":\"x\"}],\"constant\":0.0},\"set\":{\"type\":\"EqualTo\",\"value\":1.0}},{\"function\":{\"type\":\"Variable\",\"name\":\"x\"},\"set\":{\"type\":\"Integer\"}}]}",
@@ -123,16 +135,16 @@ Example with printing and no solving:
 ```
 
 Required fields:
-- `version`: [String] The version of the API that is used.
-- `termination_status`: [String] The MOI termination status.
+
+  - `version`: [String] The version of the API that is used.
+  - `termination_status`: [String] The MOI termination status.
 
 Optional fields:
-- `results`: [Array] The results array. Depending on
-  the optimization none, one, or multiple results will be
-  present. Each result will contain multiple fields describing the
-  solution, such as `objective_value`, `primal_status`,
-  `sol_names`, and `sol_values`.
-- `errors`: [Array] None, one, or multiple errors that were present.
-- `model_string`: [String] If requested via `print_format` the model
-as a string. 
 
+  - `results`: [Array] The results array. Zero, one, or multiple
+    results will be present. Each result will contain multiple fields
+    describing the solution, such as `objective_value`, `primal_status`,
+    `names`, and `values`.
+  - `errors`: [Array] None, one, or multiple errors that were present.
+  - `model_string`: [String] If requested via `print_format` the model
+    as a string.

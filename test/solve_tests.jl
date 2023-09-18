@@ -10,11 +10,12 @@ export run_solve, read_json
 
 function _get_solver(solver_name::String)
     if solver_name == "MiniZinc"
-        solver = MiniZinc.Optimizer{Int}("chuffed")
+        return MiniZinc.Optimizer{Int}("chuffed")
+    elseif solver_name == "HiGHS"
+        return HiGHS.Optimizer()
     else
-        solver = HiGHS.Optimizer()
+        error("Solver $solver_name not supported.")
     end
-    return solver
 end
 
 function run_solve(input::String)
@@ -34,7 +35,15 @@ end # end of setup module.
     import JSON3
 
     # names of JSON files in inputs/ and outputs/ folders
-    json_names = ["feas_range", "min_range", "tiny_min", "tiny_feas", "tiny_infeas"]
+    json_names = [
+        "feas_range",
+        "min_range",
+        "tiny_min",
+        "tiny_feas",
+        "tiny_infeas",
+        "simple_lp",
+        "n_queens",
+    ]
 
     @testset "$j" for j in json_names
         input = read_json("inputs", j)
@@ -54,40 +63,42 @@ end
         :objectives => ["x"],
     )
 
-    for format in ["default", "latex", "mof", "lp", "mps", "nl"]
+    # test each format
+    for format in ["moi", "latex", "mof", "lp", "mps", "nl"]
         options = Dict(:print_format => format)
         @test print_model(Dict(tiny_min..., :options => options)) isa String
     end
-
 end
 
 @testitem "validate" setup = [SolverSetup] begin
     using SolverAPI: deserialize, validate
     import JSON3
 
-    # scenarios with incorrect format 
+    # scenarios with incorrect format
     format_err_json_names = [
+        # TODO fix: error not thrown for "unsupported_print_format"
+        # "unsupported_print_format",     # print format not supported
         "feas_with_obj",                # objective provided for a feasibility problem
         "min_no_obj",                   # no objective function specified for a minimization problem
-        "unsupported_sense",            # unsupported sense such as 'feasiblity' 
+        "unsupported_sense",            # unsupported sense such as 'feasiblity'
         "obj_len_greater_than_1",       # length of objective greater than 1
-        "incorrect_range_num_params",   # number of parameters not equal to 4 
+        "incorrect_range_num_params",   # number of parameters not equal to 4
         "incorrect_range_step_not_1",   # step not one in range definition
-        "vars_is_not_str",              # field variables is not a string 
-        "vars_is_not_arr",              # field variables is not an array 
-        "objs_is_not_arr",              # field objectives is not an array 
-        "cons_is_not_arr",              # field constraints is not an array 
-        "missing_vars",                 # missing field variables 
-        "missing_cons",                 # missing field constraints 
-        "missing_objs",                 # missing field objectives 
+        "vars_is_not_str",              # field variables is not a string
+        "vars_is_not_arr",              # field variables is not an array
+        "objs_is_not_arr",              # field objectives is not an array
+        "cons_is_not_arr",              # field constraints is not an array
+        "missing_vars",                 # missing field variables
+        "missing_cons",                 # missing field constraints
+        "missing_objs",                 # missing field objectives
         "missing_sense",                # missing field sense
-        "missing_version",              # missing field version 
+        "missing_version",              # missing field version
     ]
 
     @testset "$j" for j in format_err_json_names
         input = deserialize(read_json("inputs", j))
         errors = validate(input)
+        @test errors isa Vector{SolverAPI.Error}
         @test length(errors) >= 1
-        @test all(errors[i] isa SolverAPI.Error for i in eachindex(errors))
     end
 end
