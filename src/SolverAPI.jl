@@ -357,7 +357,7 @@ function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, 
     # TODO (dba) `SolverAPI.jl` should be decoupled from any solver
     # specific code.
     options = get(() -> Dict{String,Any}(), json, :options)
-    if lowercase(get(options, :solver, "highs")) == "minizinc"
+    if json.sense == "feas"
         T = Int
         solver_info[:use_indicator] = false
     else
@@ -390,6 +390,7 @@ function load!(json::Request, T::Type, solver_info::Dict{Symbol,Any}, model::MOI
     # handle variables
     vars_map = Dict{String,MOI.VariableIndex}()
     vars = MOI.add_variables(model, length(json.variables))
+
     for (vi, si) in zip(vars, json.variables)
         vars_map[si] = vi
         MOI.set(model, MOI.VariableName(), vi, si) # TODO make this optional
@@ -448,6 +449,9 @@ function json_to_snf(a::JSON3.Array, vars_map::Dict)
         args = Any[args]
     elseif head == "max"
         head = "maximum"
+        args = Any[args]
+    elseif head == "min"
+        head = "minimum"
         args = Any[args]
     end
     return MOI.ScalarNonlinearFunction(Symbol(head), args)
