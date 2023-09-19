@@ -100,17 +100,17 @@ function response(json::Request, model::MOI.ModelLike; version = "0.1", kw...)
     var_idxs = MOI.get(model, MOI.ListOfVariableIndices())
 
     for idx in 1:result_count
-        res_idx = results[idx]
+        r = results[idx]
 
-        res_idx["primal_status"] = MOI.get(model, MOI.PrimalStatus(idx))
+        r["primal_status"] = MOI.get(model, MOI.PrimalStatus(idx))
 
         # TODO: It is redundant to return the names for every result, since they are fixed -
         # try relying on fixed vector ordering and don't return names.
-        res_idx["names"] = var_names
-        res_idx["values"] = MOI.get(model, MOI.VariablePrimal(idx), var_idxs)
+        r["names"] = var_names
+        r["values"] = MOI.get(model, MOI.VariablePrimal(idx), var_idxs)
 
         if json.sense != "feas"
-            res_idx["objective_value"] = MOI.get(model, MOI.ObjectiveValue(idx))
+            r["objective_value"] = MOI.get(model, MOI.ObjectiveValue(idx))
         end
     end
 
