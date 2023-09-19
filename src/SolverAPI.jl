@@ -357,7 +357,9 @@ function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, 
     # TODO (dba) `SolverAPI.jl` should be decoupled from any solver
     # specific code.
     options = get(() -> Dict{String,Any}(), json, :options)
-    if json.sense == "feas"
+
+    solver_name = lowercase(get(options, :solver, "highs"))
+    if solver_name == "minizinc" || solver_name == "csp2sat"
         T = Int
         solver_info[:use_indicator] = false
     else
