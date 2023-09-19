@@ -95,21 +95,22 @@ function response(json::Request, model::MOI.ModelLike; version = "0.1", kw...)
     end
 
     result_count = MOI.get(model, MOI.ResultCount())
-
     results = [Dict{String,Any}() for _ in 1:result_count]
+    var_names = [string('\"', v, '\"') for v in json.variables]
+    var_idxs = MOI.get(model, MOI.ListOfVariableIndices())
 
     for idx in 1:result_count
-        results[idx]["primal_status"] = MOI.get(model, MOI.PrimalStatus(idx))
+        res_idx = results[idx]
 
-        if status in (MOI.OPTIMAL, MOI.LOCALLY_SOLVED)
-            vars = MOI.get(model, MOI.ListOfVariableIndices())
-            sol = MOI.get(model, MOI.VariablePrimal(), vars)
-            results[idx]["names"] = [string('\"', v, '\"') for v in json.variables]
-            results[idx]["values"] = sol
+        res_idx["primal_status"] = MOI.get(model, MOI.PrimalStatus(idx))
 
-            if json.sense != "feas"
-                results[idx]["objective_value"] = MOI.get(model, MOI.ObjectiveValue())
-            end
+        # TODO: It is redundant to return the names for every result, since they are fixed -
+        # try relying on fixed vector ordering and don't return names.
+        res_idx["names"] = var_names
+        res_idx["values"] = MOI.get(model, MOI.VariablePrimal(idx), var_idxs)
+
+        if json.sense != "feas"
+            res_idx["objective_value"] = MOI.get(model, MOI.ObjectiveValue(idx))
         end
     end
 
