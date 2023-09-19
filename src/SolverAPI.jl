@@ -354,8 +354,7 @@ end
 function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, Dict{Symbol, Any}, MOI.ModelLike}
     solver_info = Dict{Symbol,Any}()
 
-    # TODO (dba) `SolverAPI.jl` should be decoupled from any solver
-    # specific code.
+    # TODO (dba) `SolverAPI.jl` should be decoupled from any solver specific code.
     options = get(() -> Dict{String,Any}(), json, :options)
     if lowercase(get(options, :solver, "highs")) == "minizinc"
         T = Int
@@ -367,11 +366,15 @@ function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, 
 
     model = MOI.instantiate(() -> solver; with_cache_type = T, with_bridge_type = T)
 
+    if MOI.supports(model, MOI.TimeLimitSec())
+        # Set time limit, defaulting to 5min.
+        MOI.set(model, MOI.TimeLimitSec(), Float64(get(options, :time_limit_sec, 300.0)))
+    end
+
+    # Set other solver options.
     for (key, val) in options
-        if key in [:solver, :print_format, :print_only]
+        if key in [:solver, :print_format, :print_only, :time_limit_sec]
             continue
-        elseif key == :time_limit_sec
-            MOI.set(model, MOI.TimeLimitSec(), Float64(val))
         elseif key == :silent
             MOI.set(model, MOI.Silent(), Bool(val))
         else
