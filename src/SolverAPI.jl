@@ -80,6 +80,10 @@ function response(json::Request, model::MOI.ModelLike; version = "0.1", kw...)
 
     res["version"] = version
 
+    name = MOI.get(model, MOI.SolverName())
+    ver = MOI.get(model, MOI.SolverVersion())
+    res["solver_version"] = string(name, '_', ver)
+
     status = MOI.get(model, MOI.TerminationStatus())
     res["termination_status"] = status
 
@@ -93,6 +97,8 @@ function response(json::Request, model::MOI.ModelLike; version = "0.1", kw...)
     if Bool(get(options, :print_only, false))
         return res
     end
+
+    res["solve_time_sec"] = Float64(MOI.get(model, MOI.SolveTimeSec()))
 
     result_count = MOI.get(model, MOI.ResultCount())
 
@@ -169,10 +175,9 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
         load!(json, T, solver_info, model)
         fn(model)
         options = get(() -> Dict{String,Any}(), json, :options)
-        if Bool(get(options, :print_only, false))
-            return response(json, model)
+        if !Bool(get(options, :print_only, false))
+            MOI.optimize!(model)
         end
-        MOI.optimize!(model)
         return response(json, model)
     catch e
         if e isa MOI.UnsupportedError
@@ -365,7 +370,7 @@ function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, 
         solver_info[:use_indicator] = true
     end
 
-    model = MOI.instantiate(() -> solver; with_cache_type = T, with_bridge_type = T)
+    model = MOI.instantiate(() -> solver; with_bridge_type = T)
 
     for (key, val) in options
         if key in [:solver, :print_format, :print_only]
