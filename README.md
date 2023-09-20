@@ -80,11 +80,11 @@ We always support the following options:
 
   - `silent`: [Bool] Controls if the solver prints any logs.
   - `time_limit_sec`: [Float64] Limits the total time expended. The optimization
-    returns a `TIME_LIMIT` status.
+    returns a `TIME_LIMIT` status. If not provided, a default of 300s is used.
   - `print_only`: [Bool] If set to true the model will only be printed
     and not solved.
-  - `print_format`: [String] If and how the model should be
-    printed. Currently supported formats: MOI, LaTeX, MOF, LP, MPS, NL.
+  - `print_format`: [String] If and how the model should be printed.
+    Currently supported formats: MOI, LaTeX, MOF, LP, MPS, NL.
 
 ### Response
 

@@ -101,21 +101,22 @@ function response(json::Request, model::MOI.ModelLike; version = "0.1", kw...)
     res["solve_time_sec"] = Float64(MOI.get(model, MOI.SolveTimeSec()))
 
     result_count = MOI.get(model, MOI.ResultCount())
-
     results = [Dict{String,Any}() for _ in 1:result_count]
+    var_names = [string('\"', v, '\"') for v in json.variables]
+    var_idxs = MOI.get(model, MOI.ListOfVariableIndices())
 
     for idx in 1:result_count
-        results[idx]["primal_status"] = MOI.get(model, MOI.PrimalStatus(idx))
+        r = results[idx]
 
-        if status in (MOI.OPTIMAL, MOI.LOCALLY_SOLVED)
-            vars = MOI.get(model, MOI.ListOfVariableIndices())
-            sol = MOI.get(model, MOI.VariablePrimal(), vars)
-            results[idx]["names"] = [string('\"', v, '\"') for v in json.variables]
-            results[idx]["values"] = sol
+        r["primal_status"] = MOI.get(model, MOI.PrimalStatus(idx))
 
-            if json.sense != "feas"
-                results[idx]["objective_value"] = MOI.get(model, MOI.ObjectiveValue())
-            end
+        # TODO: It is redundant to return the names for every result, since they are fixed -
+        # try relying on fixed vector ordering and don't return names.
+        r["names"] = var_names
+        r["values"] = MOI.get(model, MOI.VariablePrimal(idx), var_idxs)
+
+        if json.sense != "feas"
+            r["objective_value"] = MOI.get(model, MOI.ObjectiveValue(idx))
         end
     end
 
@@ -359,8 +360,7 @@ end
 function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, Dict{Symbol, Any}, MOI.ModelLike}
     solver_info = Dict{Symbol,Any}()
 
-    # TODO (dba) `SolverAPI.jl` should be decoupled from any solver
-    # specific code.
+    # TODO (dba) `SolverAPI.jl` should be decoupled from any solver specific code.
     options = get(() -> Dict{String,Any}(), json, :options)
     if lowercase(get(options, :solver, "highs")) == "minizinc"
         T = Int
@@ -372,11 +372,15 @@ function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, 
 
     model = MOI.instantiate(() -> solver; with_bridge_type = T)
 
+    if MOI.supports(model, MOI.TimeLimitSec())
+        # Set time limit, defaulting to 5min.
+        MOI.set(model, MOI.TimeLimitSec(), Float64(get(options, :time_limit_sec, 300.0)))
+    end
+
+    # Set other solver options.
     for (key, val) in options
-        if key in [:solver, :print_format, :print_only]
+        if key in [:solver, :print_format, :print_only, :time_limit_sec]
             continue
-        elseif key == :time_limit_sec
-            MOI.set(model, MOI.TimeLimitSec(), Float64(val))
         elseif key == :silent
             MOI.set(model, MOI.Silent(), Bool(val))
         else
