@@ -7,17 +7,16 @@ JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 
 [compat]
-ReTestItems = "1"
-julia = "1.8"
 JSON3 = "1"
 MathOptInterface = "1"
+ReTestItems = "1"
+julia = "1.9"
 
 [extras]
-Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
 HiGHS = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
 MiniZinc = "a7f392d2-6c35-496e-b8cc-0974fbfcbf91"
 ReTestItems = "817f1d60-ba6b-4fd5-9520-3cf149f6a823"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["HiGHS", "MiniZinc", "ReTestItems", "Test", "Coverage"]
+test = ["HiGHS", "MiniZinc", "ReTestItems", "Test"]

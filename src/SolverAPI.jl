@@ -48,7 +48,7 @@ struct Error <: Exception
 end
 
 """
-    response([request], [model]; kw...)::Dict{String,Any}
+    response([request], [model], [solver]; kw...)::Dict{String,Any}
 
 Return a response
 
@@ -56,6 +56,7 @@ Return a response
 
   - `request::SolverAPI.Request`: [optionally] The request that was received.
   - `model::MOI.ModelLike`: [optionally] The model that was solved.
+  - `solver::MOI.AbstractOptimizer`: [optionally] The solver that was used.
 
 ## Keyword Args
 
@@ -75,22 +76,30 @@ function response(;
     return Dict(pairs)
 end
 response(error::Error; kw...) = response(; errors = [error], kw...)
-function response(json::Request, model::MOI.ModelLike; version = "0.1", kw...)
+function response(
+    json::Request,
+    model::MOI.ModelLike,
+    solver::MOI.AbstractOptimizer;
+    version = "0.1",
+    kw...,
+)
     res = Dict{String,Any}()
 
     res["version"] = version
 
-    name = MOI.get(model, MOI.SolverName())
-    ver = MOI.get(model, MOI.SolverVersion())
-    res["solver_version"] = string(name, '_', ver)
+    solver_name = MOI.get(solver, MOI.SolverName())
+    solver_ver = try
+        VersionNumber(MOI.get(solver, MOI.SolverVersion()))
+    catch
+        pkgversion(parentmodule(typeof(solver)))
+    end
+    res["solver_version"] = string(solver_name, '_', solver_ver)
 
-    status = MOI.get(model, MOI.TerminationStatus())
-    res["termination_status"] = status
+    res["termination_status"] = MOI.get(model, MOI.TerminationStatus())
 
     options = get(() -> Dict{String,Any}(), json, :options)
     format = get(options, :print_format, nothing)
     if !isnothing(format)
-        # print model
         res["model_string"] = print_model(model, format)
     end
 
@@ -179,7 +188,7 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
         if !Bool(get(options, :print_only, false))
             MOI.optimize!(model)
         end
-        return response(json, model)
+        return response(json, model, solver)
     catch e
         if e isa MOI.UnsupportedError
             throw(Error(Unsupported, sprint(Base.showerror, e)))
