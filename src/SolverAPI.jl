@@ -11,6 +11,7 @@ module SolverAPI
 
 import MathOptInterface as MOI
 import JSON3
+import MutableArithmetics as MA
 
 export serialize, deserialize, solve, print_model, response
 
@@ -469,8 +470,19 @@ function nl_to_aff_or_quad(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:
                 return MOI.Utilities.operate(*, T, args[1], args[1])
             end
         else
-            h = get(_quad_ops, f.head, nothing)
-            isnothing(h) || return MOI.Utilities.operate(h, T, args...)
+            if f.head == :+
+                # https://relationalai.atlassian.net/browse/RAI-16409?filter=-1
+                # TODO (dba) this is a workaround for the above issue,
+                # but we should fix this more generally.
+                if args isa Vector{MOI.ScalarAffineFunction{Float64}}
+                    return MA.operate!(+, args[1], args[2...])
+                else
+                    return MOI.Utilities.operate(+, T, args...) 
+                end
+            else
+                h = get(_quad_ops, f.head, nothing)
+                isnothing(h) || return MOI.Utilities.operate(h, T, args...)
+            end
         end
     end
     throw(Error(Domain, "Function $f cannot be converted to linear or quadratic form."))
