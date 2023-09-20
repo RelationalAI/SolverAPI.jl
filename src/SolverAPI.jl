@@ -478,7 +478,7 @@ function nl_to_aff_or_quad(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:
                 if args isa Vector{MOI.ScalarAffineFunction{Float64}}
                     return MA.operate!(+, args[1], args[2...])
                 else
-                    return MOI.Utilities.operate(+, T, args...) 
+                    return MOI.Utilities.operate(+, T, args...)
                 end
             else
                 h = get(_quad_ops, f.head, nothing)
