@@ -471,9 +471,10 @@ function nl_to_aff_or_quad(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:
             end
         else
             if f.head == :+
-                # https://relationalai.atlassian.net/browse/RAI-16409?filter=-1
-                # TODO (dba) this is a workaround for the above issue,
-                # but we should fix this more generally.
+                # TODO (dba) this is a workaround to avoid a
+                # `StackOverflowError` error coming from
+                # `MOI.Utilities.operate`. We should avoid the `...`
+                # all together.
                 if args isa Vector{MOI.ScalarAffineFunction{Float64}}
                     return MA.operate!(+, args[1], args[2...])
                 else

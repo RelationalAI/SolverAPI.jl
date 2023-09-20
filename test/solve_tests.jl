@@ -9,9 +9,10 @@ import MathOptInterface as MOI
 export run_solve, read_json
 
 function _get_solver(solver_name::String)
-    if solver_name == "MiniZinc"
+    solver_name_lower = lowercase(solver_name)
+    if solver_name_lower == "minizinc"
         return MiniZinc.Optimizer{Int}("chuffed")
-    elseif solver_name == "HiGHS"
+    elseif solver_name_lower == "highs"
         return HiGHS.Optimizer()
     else
         error("Solver $solver_name not supported.")
@@ -100,5 +101,21 @@ end
         errors = validate(input)
         @test errors isa Vector{SolverAPI.Error}
         @test length(errors) >= 1
+    end
+end
+
+@testitem "stress-test" setup = [SolverSetup] begin
+    using SolverAPI
+    import JSON3
+
+    # names of JSON files in inputs/ and outputs/ folders
+    json_names = [
+        "nl_to_aff_or_quad_overflow" # This has 110000 constraints and 100000 variables.
+    ]
+
+    @testset "$j" for j in json_names
+        input = read_json("inputs", j)
+        output = JSON3.read(run_solve(input))
+        @test output isa JSON3.Object
     end
 end
