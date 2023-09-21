@@ -523,8 +523,8 @@ function add_obj!(
     g_type = MOI.ObjectiveFunction{typeof(g)}()
     if !MOI.supports(model, g_type)
         g_repr = string(g)
-        if length(g_repr) > 100
-            g_repr = g_repr[1:100] * " ... (truncated)"
+        if length(g_repr) > 256
+            g_repr = g_repr[1:256] * " ... (truncated)"
         end 
         throw(Error(Unsupported, "Objective function $g_repr isn't supported by this solver."))
     end
