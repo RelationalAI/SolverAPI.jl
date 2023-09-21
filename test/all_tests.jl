@@ -114,9 +114,7 @@ end
     import JSON3
 
     # names of JSON files in inputs/ and outputs/ folders
-    json_names = [
-        "nl_to_aff_or_quad_overflow",
-    ]
+    json_names = ["nl_to_aff_or_quad_overflow"]
 
     @testset "$j" for j in json_names
         input = read_json("inputs", j)
