@@ -487,7 +487,7 @@ function nl_to_aff_or_quad(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:
             isnothing(h) || return MOI.Utilities.operate(h, T, args...)
         end
     end
-    throw(Error(Domain, "Function $f cannot be converted to linear or quadratic form."))
+    return error() # Gets caught by canonicalize_SNF.
 end
 
 nl_to_aff_or_quad(::Type{<:Real}, f::MOI.VariableIndex) = f
@@ -522,16 +522,8 @@ function add_obj!(
     g = canonicalize_SNF(T, json_to_snf(a, vars_map))
     g_type = MOI.ObjectiveFunction{typeof(g)}()
     if !MOI.supports(model, g_type)
-        g_repr = string(g)
-        if length(g_repr) > 256
-            g_repr = g_repr[1:256] * " ... (truncated)"
-        end
-        throw(
-            Error(
-                Unsupported,
-                "Objective function $g_repr isn't supported by this solver.",
-            ),
-        )
+        msg = "Objective function $(trunc_str(g)) isn't supported by this solver."
+        throw(Error(Unsupported, msg))
     end
     MOI.set(model, g_type, g)
     return nothing
@@ -635,7 +627,7 @@ function add_cons!(
             g = shift_terms(T, f.args)
             s = S(zero(T))
             if !MOI.supports_constraint(model, typeof(g), typeof(s))
-                msg = "Constraint $g in $s isn't supported by this solver."
+                msg = "Constraint $(trunc_str(g)) in $(trunc_str(s)) isn't supported by this solver."
                 throw(Error(Unsupported, msg))
             end
             ci = MOI.Utilities.normalize_and_add_constraint(model, g, s)
@@ -651,6 +643,15 @@ function shift_terms(::Type{T}, args::Vector) where {T<:Real}
     g1 = canonicalize_SNF(T, args[1])
     g2 = canonicalize_SNF(T, args[2])
     return MOI.Utilities.operate(-, T, g1, g2)
+end
+
+# Convert object to string and truncate string length if too long.
+function trunc_str(f::Union{MOI.AbstractScalarFunction,MOI.AbstractScalarSet})
+    f_str = string(f)
+    if length(f_str) > 256
+        f_str = f_str[1:256] * " ... (truncated)"
+    end
+    return f_str
 end
 
 end # module SolverAPI
