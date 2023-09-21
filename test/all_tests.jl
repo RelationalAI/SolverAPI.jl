@@ -122,5 +122,6 @@ end
         input = read_json("inputs", j)
         output = JSON3.read(run_solve(input))
         @test output isa JSON3.Object
+        @test !haskey(output, "errors")
     end
 end
