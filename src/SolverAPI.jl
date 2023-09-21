@@ -176,9 +176,7 @@ gracefully and included in `Response`.
 """
 function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
     errors = validate(json)
-    if length(errors) > 0
-        return response(; errors)
-    end
+    isempty(errors) || return response(; errors)
 
     try
         T, solver_info, model = initialize(json, solver)
@@ -190,10 +188,11 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
         end
         return response(json, model, solver)
     catch e
+        _err(E) = response(Error(E, sprint(Base.showerror, e)))
         if e isa MOI.UnsupportedError
-            throw(Error(Unsupported, sprint(Base.showerror, e)))
+            return _err(Unsupported)
         elseif e isa MOI.NotAllowedError
-            throw(Error(NotAllowed, sprint(Base.showerror, e)))
+            return _err(NotAllowed)
         elseif e isa MOI.InvalidIndex ||
                e isa MOI.ResultIndexBoundsError ||
                e isa MOI.ScalarFunctionConstantNotZero ||
@@ -201,11 +200,11 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
                e isa MOI.UpperBoundAlreadySet ||
                e isa MOI.OptimizeInProgress ||
                e isa MOI.InvalidCallbackUsage
-            throw(Error(Domain, sprint(Base.showerror, e)))
+            return _err(Domain)
         elseif e isa ErrorException
-            throw(Error(Other, e.msg))
+            return _err(Other)
         else
-            rethrow()
+            return response(e)
         end
     end
 end
@@ -350,16 +349,6 @@ function validate(json::Request)#::Vector{Error}
     else
         if length(json.objectives) != 1
             _err("Only a single objective is supported.")
-        end
-    end
-
-    for con in json.constraints
-        if first(con) == "range"
-            if length(con) != 5
-                _err("The `range` constraint expects 4 arguments.")
-            elseif con[4] != 1
-                _err("The `range` constraint expects a step size of 1.")
-            end
         end
     end
 
@@ -537,14 +526,6 @@ function add_cons!(
     solver_info::Dict,
 ) where {T<:Real}
     head = a[1]
-
-    function _check_v_type(v)
-        if !(v isa MOI.VariableIndex)
-            msg = "Variable $v must be of type MOI.VariableIndex, not $(typeof(v))."
-            throw(Error(InvalidModel, msg))
-        end
-    end
-
     if head == "and"
         for i in eachindex(a)
             i == 1 && continue
@@ -577,13 +558,17 @@ function add_cons!(
         f = MOI.ScalarNonlinearFunction(:abs, Any[v])
         MOI.add_constraint(model, f, MOI.EqualTo(1))
     elseif head == "range"
+        if length(a) != 5
+            throw(Error(InvalidModel, "The `range` constraint expects 4 arguments."))
+        end
         v = json_to_snf(a[5], vars_map)
-
+        _check_v_type(v)
         if !(a[2] isa Int && a[3] isa Int)
             throw(Error(InvalidModel, "The `range` constraint expects integer bounds."))
         end
-        _check_v_type(v)
-
+        if a[4] != 1
+            throw(Error(InvalidModel, "The `range` constraint expects a step size of 1."))
+        end
         MOI.add_constraint(model, v, MOI.Integer())
         MOI.add_constraint(model, v, MOI.Interval{T}(a[2], a[3]))
     elseif head == "implies" && solver_info[:use_indicator]
@@ -635,6 +620,10 @@ function add_cons!(
     end
     return nothing
 end
+
+_check_v_type(::MOI.VariableIndex) = nothing
+_check_v_type(_) =
+    throw(Error(InvalidModel, "$v must be a `MOI.VariableIndex`, not $(typeof(v))."))
 
 ineq_to_moi = Dict(:<= => MOI.LessThan, :>= => MOI.GreaterThan, :(==) => MOI.EqualTo)
 
