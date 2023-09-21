@@ -47,9 +47,14 @@ end # end of setup module.
     ]
 
     @testset "$j" for j in json_names
-        input = read_json("inputs", j)
-        output = run_solve(input)
-        @test JSON3.read(output) == JSON3.read(read_json("outputs", j))
+        result = JSON3.read(run_solve(read_json("inputs", j)))
+        @test result.solver_version isa String
+        @test result.solve_time_sec isa Float64
+
+        expect = JSON3.read(read_json("outputs", j))
+        for (key, expect_value) in pairs(expect)
+            @test result[key] == expect_value
+        end
     end
 end
 
