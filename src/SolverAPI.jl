@@ -516,9 +516,8 @@ function _construct_saf_or_qd(::Type{T}, op::Symbol, args_rev::Vector) where {T<
     else
         if op == :+
             # NOTE (dba) this is a workaround to avoid a
-            # `StackOverflowError` error coming from
-            # `MOI.Utilities.operate` for large `args`. It is
-            # recursively defined:
+            # `StackOverflowError` coming from `MOI.Utilities.operate`
+            # for large `args`. It is recursively defined:
             # https://github.com/jump-dev/MathOptInterface.jl/blob/master/src/Utilities/operate.jl#L323-L327
             #
             # NOTE (dba) It's important we use the in-place version to
