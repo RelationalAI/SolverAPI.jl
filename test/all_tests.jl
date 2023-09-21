@@ -115,7 +115,7 @@ end
 
     # names of JSON files in inputs/ and outputs/ folders
     json_names = [
-        "nl_to_aff_or_quad_overflow", # This has 110000 constraints and 100000 variables.
+        "nl_to_aff_or_quad_overflow",
     ]
 
     @testset "$j" for j in json_names
