@@ -461,46 +461,75 @@ end
 json_to_snf(a::String, vars_map::Dict) = vars_map[a]
 json_to_snf(a::Real, ::Dict) = a
 
-# convert SNF to SAF/SQF{T}
 function nl_to_aff_or_quad(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:Real}
-    args = nl_to_aff_or_quad.(T, f.args)
-    if !any(Base.Fix2(isa, MOI.ScalarNonlinearFunction), args)
-        if f.head == :^
-            if length(args) == 2 && args[2] == 2
-                return MOI.Utilities.operate(*, T, args[1], args[1])
-            end
-        else
-            if f.head == :+
-                # TODO (dba) this is a workaround to avoid a
-                # `StackOverflowError` error coming from
-                # `MOI.Utilities.operate`. We should avoid the `...`
-                # all together.
-                if args isa Vector{MOI.ScalarAffineFunction{Float64}}
-                    return MA.operate!(+, args[1], args[2...])
-                else
-                    return MOI.Utilities.operate(+, T, args...)
-                end
-            else
-                h = get(_quad_ops, f.head, nothing)
-                isnothing(h) || return MOI.Utilities.operate(h, T, args...)
-            end
+    # We will process elements in the stack in reverse order of their
+    # occurrence in the expression.
+    stack = copy(f.args)::Vector{Any}
+    vec_of_args = Vector{Vector{Any}}([[]])
+
+    while !isempty(stack)
+        elem = pop!(stack)
+        args = vec_of_args[end]
+        if elem isa MOI.VariableIndex || elem isa T || elem isa Real
+            push!(args, nl_to_aff_or_quad(T, elem))
+        elseif elem isa MOI.ScalarNonlinearFunction
+            push!(vec_of_args, [])
+            push!(stack, elem.head)
+            append!(stack, elem.args)
+        elseif elem isa Symbol
+            snf_args_rev = pop!(vec_of_args) 
+            push!(vec_of_args[end], _construct_saf_or_qd(T, elem, snf_args_rev))
         end
     end
-    throw(Error(Domain, "Function $f cannot be converted to linear or quadratic form."))
+
+    @assert length(vec_of_args) == 1
+    snf_args_rev = pop!(vec_of_args) 
+    return _construct_saf_or_qd(T, f.head, snf_args_rev)
 end
 
 nl_to_aff_or_quad(::Type{<:Real}, f::MOI.VariableIndex) = f
 nl_to_aff_or_quad(::Type{T}, f::T) where {T<:Real} = f
 nl_to_aff_or_quad(::Type{T}, f::Real) where {T<:Real} = convert(T, f)
 
+function _construct_saf_or_qd(::Type{T}, op::Symbol, args_rev::Vector) where {T<:Real}
+    # Note that `args_rev` are in reverse order.
+    if op == :^
+        if length(args_rev) == 2 && args_rev[1] == 2
+            return MOI.Utilities.operate(*, T, args_rev[2], args_rev[2])
+        end
+    else
+        if op == :+
+            # NOTE (dba) this is a workaround to avoid a
+            # `StackOverflowError` error coming from
+            # `MOI.Utilities.operate` for large `args`. It is
+            # recursively defined:
+            # https://github.com/jump-dev/MathOptInterface.jl/blob/master/src/Utilities/operate.jl#L323-L327
+            #
+            # NOTE (dba) It's important we use the in-place version to
+            # reduce allocations!
+            #
+            # As `:+` is commutative we don't need to worry about the
+            # order of `args_rev`.
+            plus_op(accum, x) = MOI.Utilities.operate!(+, T, accum, x)
+            return reduce(plus_op, args_rev)
+        else
+            h = get(_quad_ops, op, nothing)
+            # All other operators do not take varargs. See
+            # https://github.com/jump-dev/MathOptInterface.jl/blob/master/src/Utilities/operate.jl#L329
+            if !isnothing(h)
+                # TODO (dba) convert this assertion into a validation.
+                @assert length(args_rev) == 2
+                return MOI.Utilities.operate(h, T, args_rev[2], args_rev[1])
+            end
+        end
+    end
+    throw(Error(Domain, "Function cannot be converted to linear or quadratic form."))
+end
+
 _quad_ops = Dict(:+ => +, :- => -, :* => *, :/ => /)
 
 function canonicalize_SNF(::Type{T}, f) where {T<:Real}
-    try
-        f = nl_to_aff_or_quad(T, f)
-    catch
-    end
-    return f
+    return nl_to_aff_or_quad(T, f)
 end
 
 function add_obj!(
