@@ -11,7 +11,6 @@ module SolverAPI
 
 import MathOptInterface as MOI
 import JSON3
-import MutableArithmetics as MA
 
 export serialize, deserialize, solve, print_model, response
 
@@ -461,6 +460,7 @@ end
 json_to_snf(a::String, vars_map::Dict) = vars_map[a]
 json_to_snf(a::Real, ::Dict) = a
 
+# convert SNF to SAF/SQF{T}
 function nl_to_aff_or_quad(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:Real}
     # We will process elements in the stack in reverse order of their
     # occurrence in the expression.
@@ -477,13 +477,13 @@ function nl_to_aff_or_quad(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:
             push!(stack, elem.head)
             append!(stack, elem.args)
         elseif elem isa Symbol
-            snf_args_rev = pop!(vec_of_args) 
+            snf_args_rev = pop!(vec_of_args)
             push!(vec_of_args[end], _construct_saf_or_qd(T, elem, snf_args_rev))
         end
     end
 
     @assert length(vec_of_args) == 1
-    snf_args_rev = pop!(vec_of_args) 
+    snf_args_rev = pop!(vec_of_args)
     return _construct_saf_or_qd(T, f.head, snf_args_rev)
 end
 
