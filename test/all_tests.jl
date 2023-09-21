@@ -51,13 +51,8 @@ end # end of setup module.
         @test result.solve_time_sec isa Float64
 
         expect = JSON3.read(read_json("outputs", j))
-        for (key, value) in pairs(expect)
-            if key == :model_string
-                # model string constraint ordering can vary by system
-                @test result[key] isa String
-            else
-                @test result[key] == value
-            end
+        for (key, expect_value) in pairs(expect)
+            @test result[key] == expect_value
         end
     end
 end

@@ -379,7 +379,7 @@ function initialize(json::Request, solver::MOI.AbstractOptimizer)#::Tuple{Type, 
         solver_info[:use_indicator] = true
     end
 
-    model = MOI.instantiate(() -> solver; with_bridge_type = T)
+    model = MOI.instantiate(() -> solver; with_cache_type = T, with_bridge_type = T)
 
     if MOI.supports(model, MOI.TimeLimitSec())
         # Set time limit, defaulting to 5min.
