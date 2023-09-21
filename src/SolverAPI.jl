@@ -488,6 +488,8 @@ function nl_to_aff_or_quad(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:
             push!(args, nl_to_aff_or_quad(T, elem))
         elseif elem isa MOI.ScalarNonlinearFunction
             push!(vec_of_args, [])
+            # We push the operator onto the stack as well, s.t. we
+            # know when to construct a new SAF/SQF.
             push!(stack, elem.head)
             append!(stack, elem.args)
         elseif elem isa Symbol
