@@ -522,7 +522,11 @@ function add_obj!(
     g = canonicalize_SNF(T, json_to_snf(a, vars_map))
     g_type = MOI.ObjectiveFunction{typeof(g)}()
     if !MOI.supports(model, g_type)
-        throw(Error(Unsupported, "Objective function $g isn't supported by this solver."))
+        g_repr = string(g)
+        if length(g_repr) > 100
+            g_repr = g_repr[1:100] * " ... (truncated)"
+        end 
+        throw(Error(Unsupported, "Objective function $g_repr isn't supported by this solver."))
     end
     MOI.set(model, g_type, g)
     return nothing
