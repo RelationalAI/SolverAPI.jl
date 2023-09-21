@@ -543,7 +543,11 @@ end
 _quad_ops = Dict(:+ => +, :- => -, :* => *, :/ => /)
 
 function canonicalize_SNF(::Type{T}, f) where {T<:Real}
-    return nl_to_aff_or_quad(T, f)
+    try
+        f = nl_to_aff_or_quad(T, f)
+    catch
+    end
+    return f
 end
 
 function add_obj!(
