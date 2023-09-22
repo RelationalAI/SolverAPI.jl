@@ -145,7 +145,7 @@ end
     using SolverAPI: solve
 
     # setup linear objective model with n variables
-    n = 1000
+    n = 20000
     vars = ["x$i" for i in 1:n]
     json = Dict(
         :version => "0.1",
@@ -156,7 +156,7 @@ end
         :options => Dict(:solver => "HiGHS"),
     )
 
-    # check that model is solved correctly without errors
+    # check that model is solved correctly without errors (particularly stack overflow)
     @testset "solve n=$n" begin
         output = solve(json, get_solver("HiGHS"))
         @test output isa Dict{String,Any}
