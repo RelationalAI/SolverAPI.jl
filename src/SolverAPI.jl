@@ -490,7 +490,7 @@ function nl_to_aff_or_quad!(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<
     end
 
     while !isempty(stack)
-        parent,i,arg = pop!(stack)
+        parent, i, arg = pop!(stack)
         if any(_is_snf, arg.args)
             push!(stack, (parent, i, arg))
             for j in length(arg.args):-1:1
@@ -549,7 +549,7 @@ convert_if_needed(::Type{T}, f) where {T<:Real} = f
 convert_if_needed(::Type{T}, f::Real) where {T<:Real} = convert(T, f)
 
 # convert SNF to SAF/SQF{T}
-canonicalize_SNF(::Type{T}, f) where {T<:Real} = convert_if_needed(T,f)
+canonicalize_SNF(::Type{T}, f) where {T<:Real} = convert_if_needed(T, f)
 function canonicalize_SNF(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:Real}
     try
         f = nl_to_aff_or_quad!(T, f)
