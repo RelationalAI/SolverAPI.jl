@@ -176,9 +176,7 @@ gracefully and included in `Response`.
 """
 function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
     errors = validate(json)
-    if length(errors) > 0
-        return response(; errors)
-    end
+    isempty(errors) || return response(; errors)
 
     try
         T, solver_info, model = initialize(json, solver)
@@ -190,10 +188,11 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
         end
         return response(json, model, solver)
     catch e
+        _err(E) = response(Error(E, sprint(Base.showerror, e)))
         if e isa MOI.UnsupportedError
-            throw(Error(Unsupported, sprint(Base.showerror, e)))
+            return _err(Unsupported)
         elseif e isa MOI.NotAllowedError
-            throw(Error(NotAllowed, sprint(Base.showerror, e)))
+            return _err(NotAllowed)
         elseif e isa MOI.InvalidIndex ||
                e isa MOI.ResultIndexBoundsError ||
                e isa MOI.ScalarFunctionConstantNotZero ||
@@ -201,9 +200,11 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
                e isa MOI.UpperBoundAlreadySet ||
                e isa MOI.OptimizeInProgress ||
                e isa MOI.InvalidCallbackUsage
-            throw(Error(Domain, sprint(Base.showerror, e)))
+            return _err(Domain)
         elseif e isa ErrorException
-            throw(Error(Other, e.msg))
+            return _err(Other)
+        elseif e isa Error
+            return response(e)
         else
             rethrow()
         end
@@ -353,16 +354,6 @@ function validate(json::Request)#::Vector{Error}
         end
     end
 
-    for con in json.constraints
-        if first(con) == "range"
-            if length(con) != 5
-                _err("The `range` constraint expects 4 arguments.")
-            elseif con[4] != 1
-                _err("The `range` constraint expects a step size of 1.")
-            end
-        end
-    end
-
     return out
 end
 
@@ -487,7 +478,7 @@ function nl_to_aff_or_quad(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:
             isnothing(h) || return MOI.Utilities.operate(h, T, args...)
         end
     end
-    throw(Error(Domain, "Function $f cannot be converted to linear or quadratic form."))
+    return error() # Gets caught by canonicalize_SNF.
 end
 
 nl_to_aff_or_quad(::Type{<:Real}, f::MOI.VariableIndex) = f
@@ -522,7 +513,8 @@ function add_obj!(
     g = canonicalize_SNF(T, json_to_snf(a, vars_map))
     g_type = MOI.ObjectiveFunction{typeof(g)}()
     if !MOI.supports(model, g_type)
-        throw(Error(Unsupported, "Objective function $g isn't supported by this solver."))
+        msg = "Objective function $(trunc_str(g)) isn't supported by this solver."
+        throw(Error(Unsupported, msg))
     end
     MOI.set(model, g_type, g)
     return nothing
@@ -536,14 +528,6 @@ function add_cons!(
     solver_info::Dict,
 ) where {T<:Real}
     head = a[1]
-
-    function _check_v_type(v)
-        if !(v isa MOI.VariableIndex)
-            msg = "Variable $v must be of type MOI.VariableIndex, not $(typeof(v))."
-            throw(Error(InvalidModel, msg))
-        end
-    end
-
     if head == "and"
         for i in eachindex(a)
             i == 1 && continue
@@ -576,13 +560,17 @@ function add_cons!(
         f = MOI.ScalarNonlinearFunction(:abs, Any[v])
         MOI.add_constraint(model, f, MOI.EqualTo(1))
     elseif head == "range"
+        if length(a) != 5
+            throw(Error(InvalidModel, "The `range` constraint expects 4 arguments."))
+        end
         v = json_to_snf(a[5], vars_map)
-
+        _check_v_type(v)
         if !(a[2] isa Int && a[3] isa Int)
             throw(Error(InvalidModel, "The `range` constraint expects integer bounds."))
         end
-        _check_v_type(v)
-
+        if a[4] != 1
+            throw(Error(InvalidModel, "The `range` constraint expects a step size of 1."))
+        end
         MOI.add_constraint(model, v, MOI.Integer())
         MOI.add_constraint(model, v, MOI.Interval{T}(a[2], a[3]))
     elseif head == "implies" && solver_info[:use_indicator]
@@ -626,7 +614,7 @@ function add_cons!(
             g = shift_terms(T, f.args)
             s = S(zero(T))
             if !MOI.supports_constraint(model, typeof(g), typeof(s))
-                msg = "Constraint $g in $s isn't supported by this solver."
+                msg = "Constraint $(trunc_str(g)) in $(trunc_str(s)) isn't supported by this solver."
                 throw(Error(Unsupported, msg))
             end
             ci = MOI.Utilities.normalize_and_add_constraint(model, g, s)
@@ -635,6 +623,10 @@ function add_cons!(
     return nothing
 end
 
+_check_v_type(::MOI.VariableIndex) = nothing
+_check_v_type(_) =
+    throw(Error(InvalidModel, "$v must be a `MOI.VariableIndex`, not $(typeof(v))."))
+
 ineq_to_moi = Dict(:<= => MOI.LessThan, :>= => MOI.GreaterThan, :(==) => MOI.EqualTo)
 
 function shift_terms(::Type{T}, args::Vector) where {T<:Real}
@@ -642,6 +634,15 @@ function shift_terms(::Type{T}, args::Vector) where {T<:Real}
     g1 = canonicalize_SNF(T, args[1])
     g2 = canonicalize_SNF(T, args[2])
     return MOI.Utilities.operate(-, T, g1, g2)
+end
+
+# Convert object to string and truncate string length if too long.
+function trunc_str(f::Union{MOI.AbstractScalarFunction,MOI.AbstractScalarSet})
+    f_str = string(f)
+    if length(f_str) > 256
+        f_str = f_str[1:256] * " ... (truncated)"
+    end
+    return f_str
 end
 
 end # module SolverAPI
