@@ -203,8 +203,10 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
             return _err(Domain)
         elseif e isa ErrorException
             return _err(Other)
-        else
+        elseif e isa Error
             return response(e)
+        else
+            rethrow()
         end
     end
 end
