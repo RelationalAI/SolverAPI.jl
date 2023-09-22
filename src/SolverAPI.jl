@@ -499,7 +499,7 @@ function nl_to_aff_or_quad!(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<
                 end
             end
         else
-            # leaf. all the parents arguments have been converted.
+            # leaf. all of `parent`'s arguments have been converted.
             parent.args[i] = _construct_saf_or_qd(T, arg)
         end
     end
@@ -507,6 +507,8 @@ function nl_to_aff_or_quad!(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<
     return _construct_saf_or_qd(T, f)
 end
 
+# construct a new SAF or SQF from a SNF. We assume that all arguments
+# have already been converted.
 function _construct_saf_or_qd(::Type{T}, f::MOI.ScalarNonlinearFunction) where {T<:Real}
     for i in eachindex(f.args)
         f.args[i] = convert_if_needed(T, f.args[i])
@@ -525,9 +527,6 @@ function _construct_saf_or_qd(::Type{T}, f::MOI.ScalarNonlinearFunction) where {
             #
             # NOTE (dba) It's important we use the in-place version to
             # reduce allocations!
-            #
-            # As `:+` is commutative we don't need to worry about the
-            # order of `args_rev`.
             plus_op(accum, x) = MOI.Utilities.operate!(+, T, accum, x)
             return reduce(plus_op, f.args)
         else
