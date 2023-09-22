@@ -21,7 +21,12 @@ end
 
 function run_solve(input::String)
     json = deserialize(input)
-    solver = get_solver(json.options.solver)
+    solver_name = try
+        json.options.solver
+    catch
+        "highs"
+    end
+    solver = get_solver(solver_name)
     output = solve(json, solver)
     return String(serialize(output))
 end
@@ -34,18 +39,19 @@ end # end of setup module.
 @testitem "print" setup = [SolverSetup] begin
     using SolverAPI: print_model
 
-    model = Dict(
+    json = Dict(
         :version => "0.1",
         :sense => "min",
         :variables => ["x"],
         :constraints => [["==", "x", 1], ["Int", "x"]],
         :objectives => ["x"],
+        :options => Dict(:print_format => "none"),
     )
 
     # check MOI model printing for each format
     @testset "$f" for f in ["moi", "latex", "mof", "lp", "mps", "nl"]
-        request = Dict(model..., :options => Dict(:print_format => f))
-        @test print_model(request) isa String
+        json[:options][:print_format] = f
+        @test print_model(json) isa String
     end
 end
 
@@ -91,6 +97,8 @@ end
         ("missing_sense", "InvalidFormat"),
         # missing field version
         ("missing_version", "InvalidFormat"),
+        # missing field options
+        ("missing_options", "InvalidFormat"),
         # field variables is not a string
         ("vars_is_not_str", "InvalidFormat"),
         # field variables is not an array
@@ -125,6 +133,7 @@ end
         ("unsupported_print_format", "Unsupported"),
     ]
 
+    # check that expected error types are returned for each json input
     @testset "$j" for (j, es...) in json_names_and_errors
         result = JSON3.read(run_solve(read_json("inputs", j)))
         @test haskey(result, :errors) && length(result.errors) >= 1
@@ -138,18 +147,21 @@ end
     # setup linear objective model with n variables
     n = 1000
     vars = ["x$i" for i in 1:n]
-    model = Dict(
+    json = Dict(
         :version => "0.1",
         :sense => "max",
         :variables => vars,
         :constraints => [["Bin", v] for v in vars],
         :objectives => [vcat("+", 1, [["*", i, v] for (i, v) in enumerate(vars)])],
+        :options => Dict(:solver => "HiGHS"),
     )
 
     # check that model is solved correctly without errors
-    output = solve(model, get_solver("HiGHS"))
-    @test output isa Dict{String,Any}
-    @test !haskey(output, "errors")
-    @test output["termination_status"] == "OPTIMAL"
-    @test output["results"][1]["objective_value"] ≈ 1 + div(n * (n + 1), 2)
+    @testset "solve n=$n" begin
+        output = solve(json, get_solver("HiGHS"))
+        @test output isa Dict{String,Any}
+        @test !haskey(output, "errors")
+        @test output["termination_status"] == "OPTIMAL"
+        @test output["results"][1]["objective_value"] ≈ 1 + div(n * (n + 1), 2)
+    end
 end
