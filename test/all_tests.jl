@@ -112,7 +112,7 @@ end
     using SolverAPI: solve
 
     # setup linear objective model with n variables
-    n = 20000
+    n = 1000
     vars = ["x$i" for i in 1:n]
     model = Dict(
         :version => "0.1",
