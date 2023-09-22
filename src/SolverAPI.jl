@@ -95,7 +95,7 @@ function response(
     end
     res["solver_version"] = string(solver_name, '_', solver_ver)
 
-    res["termination_status"] = MOI.get(model, MOI.TerminationStatus())
+    res["termination_status"] = string(MOI.get(model, MOI.TerminationStatus()))
 
     options = get(() -> Dict{String,Any}(), json, :options)
     format = get(options, :print_format, nothing)
@@ -117,7 +117,7 @@ function response(
     for idx in 1:result_count
         r = results[idx]
 
-        r["primal_status"] = MOI.get(model, MOI.PrimalStatus(idx))
+        r["primal_status"] = string(MOI.get(model, MOI.PrimalStatus(idx)))
 
         # TODO: It is redundant to return the names for every result, since they are fixed -
         # try relying on fixed vector ordering and don't return names.
