@@ -75,35 +75,59 @@ end
     end
 end
 
-@testitem "validate" setup = [SolverSetup] begin
-    using SolverAPI: deserialize, validate
+@testitem "errors" setup = [SolverSetup] begin
+    using SolverAPI
     import JSON3
 
     # scenarios with incorrect format
-    format_err_json_names = [
-        # TODO fix: error not thrown for "unsupported_print_format"
-        # "unsupported_print_format",     # print format not supported
-        "feas_with_obj",                # objective provided for a feasibility problem
-        "min_no_obj",                   # no objective function specified for a minimization problem
-        "unsupported_sense",            # unsupported sense such as 'feasiblity'
-        "obj_len_greater_than_1",       # length of objective greater than 1
-        "incorrect_range_num_params",   # number of parameters not equal to 4
-        "incorrect_range_step_not_1",   # step not one in range definition
-        "vars_is_not_str",              # field variables is not a string
-        "vars_is_not_arr",              # field variables is not an array
-        "objs_is_not_arr",              # field objectives is not an array
-        "cons_is_not_arr",              # field constraints is not an array
-        "missing_vars",                 # missing field variables
-        "missing_cons",                 # missing field constraints
-        "missing_objs",                 # missing field objectives
-        "missing_sense",                # missing field sense
-        "missing_version",              # missing field version
+    json_names_and_errors = [
+        # missing field variables
+        ("missing_vars", "InvalidFormat"),
+        # missing field constraints
+        ("missing_cons", "InvalidFormat"),
+        # missing field objectives
+        ("missing_objs", "InvalidFormat"),
+        # missing field sense
+        ("missing_sense", "InvalidFormat"),
+        # missing field version
+        ("missing_version", "InvalidFormat"),
+        # field variables is not a string
+        ("vars_is_not_str", "InvalidFormat"),
+        # field variables is not an array
+        ("vars_is_not_arr", "InvalidFormat"),
+        # field objectives is not an array
+        ("objs_is_not_arr", "InvalidFormat"),
+        # field constraints is not an array
+        ("cons_is_not_arr", "InvalidFormat"),
+        # length of objective greater than 1
+        ("obj_len_greater_than_1", "InvalidFormat"),
+        # objective provided for a feasibility problem
+        ("feas_with_obj", "InvalidFormat"),
+        # no objective function specified for a minimization problem
+        ("min_no_obj", "InvalidFormat"),
+        # unsupported sense such as 'feasibility'
+        ("unsupported_sense", "InvalidFormat"),
+        # range: wrong number of args
+        ("incorrect_range_num_params", "InvalidModel"),
+        # range: step not one
+        ("incorrect_range_step_not_1", "InvalidModel"),
+        # unsupported objective function type
+        ("unsupported_obj_type", "Unsupported"),
+        # unsupported constraint function type
+        ("unsupported_con_type", "Unsupported"),
+        # unsupported constraint sign
+        ("unsupported_con_sign", "Unsupported"),
+        # unsupported operator
+        ("unsupported_operator", "Unsupported"),
+        # unsupported solver option
+        ("unsupported_solver_option", "Unsupported"),
+        # print format not supported
+        ("unsupported_print_format", "Unsupported"),
     ]
 
-    @testset "$j" for j in format_err_json_names
-        input = deserialize(read_json("inputs", j))
-        errors = validate(input)
-        @test errors isa Vector{SolverAPI.Error}
-        @test length(errors) >= 1
+    @testset "$j" for (j, es...) in json_names_and_errors
+        result = JSON3.read(run_solve(read_json("inputs", j)))
+        @test haskey(result, :errors) && length(result.errors) >= 1
+        @test Set(e.type for e in result.errors) == Set(es)
     end
 end
