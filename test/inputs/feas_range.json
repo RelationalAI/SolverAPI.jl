@@ -1,1 +1,1 @@
-{"version":"0.1","sense":"feas","variables":["x"],"constraints":[["range",9, 9, 1, "x"],["Float","x"]],"objectives":[],"options":{"solver":"MiniZinc"}}
+{"version":"0.1","sense":"feas","variables":["x"],"constraints":[["range",9,9,1,"x"],["Float","x"]],"objectives":[],"options":{"solver":"MiniZinc"}}
