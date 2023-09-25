@@ -181,7 +181,8 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
 
     # TODO (dba) `SolverAPI.jl` should be decoupled from any solver specific code.
     solver_info = Dict{Symbol,Any}()
-    if lowercase(get(json.options, :solver, "highs")) == "minizinc"
+    solver_name = lowercase(get(json.options, :solver, "highs")) 
+    if solver_name in ["minizinc","csp2sat"]
         T = Int
         solver_info[:use_indicator] = false
     else
