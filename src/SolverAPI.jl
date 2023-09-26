@@ -162,7 +162,7 @@ deserialize(body::Vector{UInt8}) = JSON3.read(body)
 deserialize(body::String) = deserialize(Vector{UInt8}(body))
 
 """
-    solve([fn], request::Request, solver::MOI.AbstractOptimizer)::Response
+    solve([fn], request::Request, solver::MOI.AbstractOptimizer; bridge_type=Float64)::Response
 
 Solve the optimization problem. Invalid specifications are handled
 gracefully and included in `Response`.
@@ -174,26 +174,38 @@ gracefully and included in `Response`.
     the `MOI.ModelLike` model and should return `Nothing`.
   - `request`: A `SolverAPI.Request` specifying the optimization problem.
   - `solver`: A `MOI.AbstractOptimizer` to use to solve the problem.
+
+## Keyword Args
+
+  - `bridge_type`: The type to use for the solver cache and bridge. Either `Int` or `Float64`. Defaults to `Float64`.
 """
-function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
+function solve(
+    fn,
+    json::Request,
+    solver::MOI.AbstractOptimizer;
+    bridge_type::Type = Float64,
+)
     errors = validate(json)
     isempty(errors) || return response(; errors)
 
-    # TODO (dba) `SolverAPI.jl` should be decoupled from any solver specific code.
     solver_info = Dict{Symbol,Any}()
-    if lowercase(get(json.options, :solver, "highs")) == "minizinc"
-        T = Int
+    if bridge_type == Int
         solver_info[:use_indicator] = false
-    else
-        T = Float64
+    elseif bridge_type == Float64
         solver_info[:use_indicator] = true
+    else
+        throw(ArgumentError("`bridge_type` must be either Int or Float64"))
     end
 
-    model = MOI.instantiate(() -> solver; with_cache_type = T, with_bridge_type = T)
+    model = MOI.instantiate(
+        () -> solver;
+        with_cache_type = bridge_type,
+        with_bridge_type = bridge_type,
+    )
 
     try
         set_options!(model, json.options)
-        load!(model, json, T, solver_info)
+        load!(model, json, bridge_type, solver_info)
         fn(model)
         if !Bool(get(json.options, :print_only, false))
             MOI.optimize!(model)
@@ -224,10 +236,10 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
         MOI.empty!(model)
     end
 end
-solve(request::Request, solver::MOI.AbstractOptimizer) =
-    solve(model -> nothing, request, solver)
-solve(request::Dict, solver::MOI.AbstractOptimizer) =
-    solve(JSON3.read(JSON3.write(request)), solver)
+solve(request::Request, solver::MOI.AbstractOptimizer; kw...) =
+    solve(model -> nothing, request, solver; kw...)
+solve(request::Dict, solver::MOI.AbstractOptimizer; kw...) =
+    solve(JSON3.read(JSON3.write(request)), solver; kw...)
 
 """
     print_model(request::Request)::String

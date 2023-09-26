@@ -27,7 +27,8 @@ function run_solve(input::String)
         "highs"
     end
     solver = get_solver(solver_name)
-    output = solve(json, solver)
+    T = solver isa MiniZinc.Optimizer ? Int : Float64
+    output = solve(json, solver; bridge_type = T)
     return String(serialize(output))
 end
 
