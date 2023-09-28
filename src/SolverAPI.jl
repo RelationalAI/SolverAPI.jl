@@ -161,39 +161,23 @@ used with `solve` or `print_model`.
 deserialize(body::Vector{UInt8}) = JSON3.read(body)
 deserialize(body::String) = deserialize(Vector{UInt8}(body))
 
-"""
-    solve([fn], request::Request, solver::MOI.AbstractOptimizer)::Response
-
-Solve the optimization problem. Invalid specifications are handled
-gracefully and included in `Response`.
-
-## Args
-
-  - `fn`: [Optionally] A function to call before solving the problem. This is useful
-    for setting up custom solver options. The function is called with
-    the `MOI.ModelLike` model and should return `Nothing`.
-  - `request`: A `SolverAPI.Request` specifying the optimization problem.
-  - `solver`: A `MOI.AbstractOptimizer` to use to solve the problem.
-"""
-function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
+# Internal version of `solve`. We do this to make handling keyword
+# arguments easier.
+function _solve(fn, json::Request, solver::MOI.AbstractOptimizer; kw...)
     errors = validate(json)
     isempty(errors) || return response(; errors)
 
-    # TODO (dba) `SolverAPI.jl` should be decoupled from any solver specific code.
-    solver_info = Dict{Symbol,Any}()
-    if lowercase(get(json.options, :solver, "highs")) == "minizinc"
-        T = Int
-        solver_info[:use_indicator] = false
-    else
-        T = Float64
-        solver_info[:use_indicator] = true
-    end
+    solver_info = Dict{Symbol,Any}(kw...)
 
-    model = MOI.instantiate(() -> solver; with_cache_type = T, with_bridge_type = T)
+    model = MOI.instantiate(
+        () -> solver;
+        with_cache_type = solver_info[:numerical_type],
+        with_bridge_type = solver_info[:numerical_type],
+    )
 
     try
         set_options!(model, json.options)
-        load!(model, json, T, solver_info)
+        load!(model, json, solver_info)
         fn(model)
         if !Bool(get(json.options, :print_only, false))
             MOI.optimize!(model)
@@ -224,13 +208,41 @@ function solve(fn, json::Request, solver::MOI.AbstractOptimizer)
         MOI.empty!(model)
     end
 end
-solve(request::Request, solver::MOI.AbstractOptimizer) =
-    solve(model -> nothing, request, solver)
-solve(request::Dict, solver::MOI.AbstractOptimizer) =
-    solve(JSON3.read(JSON3.write(request)), solver)
+_solve(fn, request::Dict, solver::MOI.AbstractOptimizer; kw...) =
+    _solve(fn, JSON3.read(JSON3.write(request)), solver; kw...)
 
 """
-    print_model(request::Request)::String
+    solve([fn], request::Request, solver::MOI.AbstractOptimizer; <kwargs>)::Response
+
+Solve the optimization problem. Invalid specifications are handled
+gracefully and included in `Response`.
+
+## Args
+
+  - `fn`: [Optionally] A function to call before solving the problem. This is useful
+    for setting up custom solver options. The function is called with
+    the `MOI.ModelLike` model and should return `Nothing`.
+  - `request`: A `SolverAPI.Request` specifying the optimization problem.
+  - `solver`: A `MOI.AbstractOptimizer` to use to solve the problem.
+
+## Keyword Args
+
+  - `use_indicator=true`: Whether to use indicator constraints.
+  - `numerical_type=Float64`: The numerical type to use for the solver.
+"""
+function solve(
+    fn,
+    request,
+    solver;
+    use_indicator::Bool = true,
+    numerical_type::Type{<:Real} = Float64,
+)
+    return _solve(fn, request, solver; use_indicator, numerical_type)
+end
+solve(request, solver; kw...) = solve(model -> nothing, request, solver; kw...)
+
+"""
+    print_model(request::Request; <kwargs>)::String
     print_model(model::MOI.ModelLike, format::String)::String
 
 Print the `model`. `format` options (case-insensitive) are:
@@ -241,6 +253,11 @@ Print the `model`. `format` options (case-insensitive) are:
   - `LP` (LP file)
   - `MPS` (MPS file)
   - `NL` (NL file)
+
+## Keyword Args
+
+  - `use_indicator=true`: Whether to use indicator constraints.
+  - `numerical_type=Float64`: The numerical type to use for the model.
 """
 function print_model(model::MOI.ModelLike, format::String)
     format_lower = lowercase(format)
@@ -273,7 +290,11 @@ function print_model(model::MOI.ModelLike, format::String)
     MOI.copy_to(dest, model)
     return sprint(write, dest)
 end
-function print_model(request::Request; T = Float64)
+function print_model(
+    request::Request;
+    use_indicator::Bool = true,
+    numerical_type::Type{<:Real} = Float64,
+)
     errors = validate(request)
     if length(errors) > 0
         throw(CompositeException(errors))
@@ -282,15 +303,14 @@ function print_model(request::Request; T = Float64)
     # Default to MOI format.
     format = get(request.options, :print_format, "MOI")
 
-    # TODO cleanup/refactor solver_info logic.
-    use_indicator = T == Float64
-    solver_info = Dict{Symbol,Any}(:use_indicator => use_indicator)
-    model = MOI.Utilities.Model{T}()
+    solver_info =
+        Dict{Symbol,Any}(:use_indicator => use_indicator, :numerical_type => numerical_type)
+    model = MOI.Utilities.Model{numerical_type}()
 
-    load!(model, request, T, solver_info)
+    load!(model, request, solver_info)
     return print_model(model, format)
 end
-print_model(request::Dict) = print_model(JSON3.read(JSON3.write(request)))
+print_model(request::Dict; kw...) = print_model(JSON3.read(JSON3.write(request)); kw...)
 
 # Internal
 # ========================================================================================
@@ -393,7 +413,9 @@ function set_options!(model::MOI.ModelLike, options::JSON3.Object)#::Nothing
     return nothing
 end
 
-function load!(model::MOI.ModelLike, json::Request, T::Type, solver_info::Dict{Symbol,Any})#::Nothing
+function load!(model::MOI.ModelLike, json::Request, solver_info::Dict{Symbol,Any})#::Nothing
+    T = solver_info[:numerical_type]
+
     # handle variables
     vars_map = Dict{String,MOI.VariableIndex}()
     vars = MOI.add_variables(model, length(json.variables))
