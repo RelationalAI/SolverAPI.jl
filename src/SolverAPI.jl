@@ -380,7 +380,10 @@ function validate(json::Request)#::Vector{Error}
             _err("Objectives must be empty when `sense` is `feas`.")
         end
     else
-        if length(json.objectives) != 1
+        obj_len = length(json.objectives)
+        if obj_len == 0
+            _err("No objective is given.")
+        elseif obj_len != 1
             _err("Only a single objective is supported.")
         end
     end
