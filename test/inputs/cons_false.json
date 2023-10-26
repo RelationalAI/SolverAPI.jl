@@ -1,0 +1,1 @@
+{"version":"0.1","sense":"feas","variables":["x"],"constraints":[["==",1,0],["Nonneg","x"]],"objectives":[],"options":{"solver":"highs"}}

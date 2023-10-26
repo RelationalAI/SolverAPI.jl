@@ -4,7 +4,7 @@ function add_obj!(
     ::Type{T},
     model::MOI.ModelLike,
     sense::String,
-    a::Union{String,JSON3.Array},
+    a::Any,
     vars_map::Dict,
     ::Dict,
 ) where {T<:Real}
@@ -16,6 +16,9 @@ function add_obj!(
     MOI.set(model, MOI.ObjectiveSense(), moi_sense)
 
     g = canonicalize_SNF(T, json_to_snf(a, vars_map))
+    if !(g isa MOI.AbstractScalarFunction)
+        g = convert(MOI.ScalarAffineFunction{T}, g)
+    end
     g_type = MOI.ObjectiveFunction{typeof(g)}()
     if !MOI.supports(model, g_type)
         msg = "Objective function $(trunc_str(g)) isn't supported by this solver."
@@ -139,7 +142,11 @@ function shift_terms(::Type{T}, args::Vector) where {T<:Real}
     @assert length(args) == 2 # This should never happen.
     g1 = canonicalize_SNF(T, args[1])
     g2 = canonicalize_SNF(T, args[2])
-    return MOI.Utilities.operate(-, T, g1, g2)
+    g = MOI.Utilities.operate(-, T, g1, g2)
+    if !(g isa MOI.AbstractScalarFunction)
+        g = convert(MOI.ScalarAffineFunction{T}, g)
+    end
+    return g
 end
 
 # Convert object to string and truncate string length if too long.
