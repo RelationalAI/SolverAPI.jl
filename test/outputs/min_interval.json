@@ -1,0 +1,1 @@
+{"model_string":"Minimize: x\n\nSubject to:\n x ∈ [1, 3.5]\n","termination_status":"OPTIMAL","results":[{"names":["\"x\""],"values":[1.0],"primal_status":"FEASIBLE_POINT","objective_value":1.0}],"version":"0.1"}

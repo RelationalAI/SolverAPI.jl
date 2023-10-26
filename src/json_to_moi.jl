@@ -72,7 +72,7 @@ function add_cons!(
         v = json_to_snf(a[4], vars_map)
         _check_v_type(v)
         if !(a[2] isa Number && a[3] isa Number)
-            throw(Error(InvalidModel, "The `interval` constraint expects numerical bounds."))
+            throw(Error(InvalidModel, "The `interval` constraint expects number bounds."))
         end
         MOI.add_constraint(model, v, MOI.Interval{T}(T(a[2]), T(a[3])))
     elseif head == "range"
