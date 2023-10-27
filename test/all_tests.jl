@@ -69,6 +69,9 @@ end
         "tiny_infeas",
         "simple_lp",
         "n_queens",
+        "min_constant",
+        "cons_true",
+        "cons_false",
     ]
 
     # solve and check output is expected for each input json file
