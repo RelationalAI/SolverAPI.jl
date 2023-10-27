@@ -63,7 +63,7 @@ end
     # names of JSON files in inputs/ and outputs/ folders
     json_names = [
         "feas_range",
-        "min_range",
+        "min_interval",
         "tiny_min",
         "tiny_feas",
         "tiny_infeas",

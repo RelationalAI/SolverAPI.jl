@@ -1,1 +1,0 @@
-{"model_string":"Minimize: x\n\nSubject to:\n x ∈ [0, 9]\n x ∈ ℤ\n","termination_status":"OPTIMAL","results":[{"names":["\"x\""],"values":[0.0],"primal_status":"FEASIBLE_POINT","objective_value":0.0}],"version":"0.1"}

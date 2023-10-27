@@ -68,6 +68,16 @@ function add_cons!(
         MOI.add_constraint(model, v, MOI.Integer())
         f = MOI.ScalarNonlinearFunction(:abs, Any[v])
         MOI.add_constraint(model, f, MOI.EqualTo(1))
+    elseif head == "interval"
+        if length(a) != 4
+            throw(Error(InvalidModel, "The `interval` constraint expects 3 arguments."))
+        end
+        v = json_to_snf(a[4], vars_map)
+        _check_v_type(v)
+        if !(a[2] isa Number && a[3] isa Number)
+            throw(Error(InvalidModel, "The `interval` constraint expects number bounds."))
+        end
+        MOI.add_constraint(model, v, MOI.Interval{T}(T(a[2]), T(a[3])))
     elseif head == "range"
         if length(a) != 5
             throw(Error(InvalidModel, "The `range` constraint expects 4 arguments."))
@@ -166,19 +176,7 @@ function json_to_snf(a::JSON3.Array, vars_map::Dict)
     args = Any[json_to_snf(a[i], vars_map) for i in eachindex(a) if i != 1]
 
     head isa String || return args
-    if head == "range"
-        # TODO handle variables in different positions, etc
-        # TODO handle as interval constraint?
-        lb, ub, step, x = args
-        step == 1 || throw(Error(NotAllowed, "Step size $step is not supported."))
-        return MOI.ScalarNonlinearFunction(
-            :∧,
-            Any[
-                MOI.ScalarNonlinearFunction(:<=, Any[lb, x]),
-                MOI.ScalarNonlinearFunction(:<=, Any[x, ub]),
-            ],
-        )
-    elseif head == "and"
+    if head == "and"
         head = "forall"
         args = Any[args]
     elseif head == "or"
