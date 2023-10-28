@@ -72,6 +72,8 @@ end
         "min_constant",
         "cons_true",
         "cons_false",
+        "in_con_mip",
+        "in_con_csp",
     ]
 
     # solve and check output is expected for each input json file

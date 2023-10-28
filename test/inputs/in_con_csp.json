@@ -1,0 +1,1 @@
+{"version":"0.1","sense":"min","variables":["x_1","x_2"],"constraints":[["in","x_1","x_2",[[1,2],[-2,3]]],["Float","x_1"],["Float","x_2"]],"objectives":[["+","x_1","x_2"]],"options":{"solver":"minizinc"}}
