@@ -74,6 +74,8 @@ end
         "cons_false",
         "in_con_mip",
         "in_con_csp",
+        "in_con_const_mip",
+        "in_con_expr_csp",
     ]
 
     # solve and check output is expected for each input json file
@@ -126,6 +128,10 @@ end
         ("incorrect_range_num_params", "InvalidModel"),
         # range: step not one
         ("incorrect_range_step_not_1", "InvalidModel"),
+        # interval: wrong number of args
+        ("incorrect_interval_num_params", "InvalidModel"),
+        # relational application constraint malformed
+        ("in_con_malformed", "InvalidModel"),
         # unsupported objective function type
         ("unsupported_obj_type", "Unsupported"),
         # unsupported constraint function type

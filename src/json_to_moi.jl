@@ -97,7 +97,7 @@ function add_cons!(
             msg = "The relational application constraint expects at least two arguments."
             throw(Error(InvalidModel, msg))
         end
-        exprs = [json_to_snf(a[i], vars_map) for i in 2:length(a)-1]
+        exprs = [canonicalize_SNF(T, json_to_snf(a[i], vars_map)) for i in 2:length(a)-1]
         vecs = a[end]
         if !(vecs isa JSON3.Array) || !all(length(row) == length(exprs) for row in vecs)
             msg = "The relational application constraint is malformed."
