@@ -109,6 +109,9 @@ function response(
     end
 
     res["solve_time_sec"] = Float64(MOI.get(model, MOI.SolveTimeSec()))
+    res["relative_gap"] = Float64(MOI.get(model, MOI.RelativeGap()))
+    res["relative_gap_tolerance"] = Float64(MOI.get(model, MOI.RelativeGapTolerance()))
+    res["absolute_gap_tolerance"] = Float64(MOI.get(model, MOI.AbsoluteGapTolerance()))
 
     result_count = MOI.get(model, MOI.ResultCount())
     results = [Dict{String,Any}() for _ in 1:result_count]
@@ -398,8 +401,36 @@ function set_options!(model::MOI.ModelLike, options::JSON3.Object)#::Nothing
         MOI.set(model, MOI.TimeLimitSec(), Float64(get(options, :time_limit_sec, 300.0)))
     end
 
+    if MOI.supports(model, MOI.RelativeGapTolerance())
+        # Set relative gap tolerance 
+        rel_gap_tol = Float64(get(options, :relative_gap_tolerance, 1e-4))
+        if rel_gap_tol < 0 || rel_gap_tol > 1
+            throw(Error(NotAllowed, "Relative gap tolerance must be within [0,1]."))
+        end
+
+        @info "Setting relative gap tolerance = $rel_gap_tol"
+        MOI.set(model, MOI.RelativeGapTolerance(), rel_gap_tol)
+    end
+
+    if MOI.supports(model, MOI.AbsoluteGapTolerance())
+        # Set absolute gap tolerance 
+        abs_gap_tol = Float64(get(options, :absolute_gap_tolerance, 1e-10))
+        if abs_gap_tol < 0
+            throw(Error(NotAllowed, "Absolute gap tolerance must be non-negative."))
+        end
+        @info "Setting abs gap tolerance = $abs_gap_tol"
+        MOI.set(model, MOI.AbsoluteGapTolerance(), abs_gap_tol)
+    end
+
     for (key, val) in options
-        if key in [:solver, :print_format, :print_only, :time_limit_sec]
+        if key in [
+            :solver,
+            :print_format,
+            :print_only,
+            :time_limit_sec,
+            :relative_gap_tolerance,
+            :absolute_gap_tolerance,
+        ]
             # Skip - these are handled elsewhere.
             continue
         elseif key == :silent
