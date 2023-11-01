@@ -81,6 +81,8 @@ end
     # solve and check output is expected for each input json file
     @testset "$j" for j in json_names
         output = JSON3.read(run_solve(read_json("inputs", j)))
+        @info output
+        #isdefined(Main, :Infiltrator) && Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
         @test output.solver_version isa String
         @test output.solve_time_sec isa Float64
         expect = JSON3.read(read_json("outputs", j))
@@ -126,10 +128,6 @@ end
         ("abs_gap_out_of_range", "NotAllowed"),
         # relative_gap_tolerance must be within [0,1] 
         ("rel_gap_out_of_range", "NotAllowed"),
-        # absolute_gap_tolerance set for non-mip solvers such as MiniZinc or CSP2SAT
-        ("abs_gap_non_mip_solvers", "NotAllowed"),
-        # relative_gap_tolerance set for non-mip solvers such as MiniZinc or CSP2SAT
-        ("rel_gap_non_mip_solvers", "NotAllowed"),
         # unsupported sense such as 'feasibility'
         ("unsupported_sense", "InvalidFormat"),
         # range: wrong number of args

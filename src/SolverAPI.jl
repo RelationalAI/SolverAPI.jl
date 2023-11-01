@@ -109,11 +109,18 @@ function response(
     end
 
     res["solve_time_sec"] = Float64(MOI.get(model, MOI.SolveTimeSec()))
-    res["relative_gap"] = Float64(MOI.get(model, MOI.RelativeGap()))
-    res["relative_gap_tolerance"] = Float64(MOI.get(model, MOI.RelativeGapTolerance()))
-    res["absolute_gap_tolerance"] = Float64(MOI.get(model, MOI.AbsoluteGapTolerance()))
 
     result_count = MOI.get(model, MOI.ResultCount())
+
+    try
+        res["relative_gap"] = Float64(MOI.get(model, MOI.RelativeGap()))
+        if isinf(res["relative_gap"])
+            res["relative_gap"] = nothing # Inf cannot be serialized to JSON
+        end
+    catch
+        # ignore if solver does not support relative gap 
+    end
+
     results = [Dict{String,Any}() for _ in 1:result_count]
     var_names = [string('\"', v, '\"') for v in json.variables]
     var_idxs = MOI.get(model, MOI.ListOfVariableIndices())
@@ -401,9 +408,10 @@ function set_options!(model::MOI.ModelLike, options::JSON3.Object)#::Nothing
         MOI.set(model, MOI.TimeLimitSec(), Float64(get(options, :time_limit_sec, 300.0)))
     end
 
-    if MOI.supports(model, MOI.RelativeGapTolerance())
+    if MOI.supports(model, MOI.RelativeGapTolerance()) &&
+       haskey(options, :relative_gap_tolerance)
         # Set relative gap tolerance 
-        rel_gap_tol = Float64(get(options, :relative_gap_tolerance, 1e-4))
+        rel_gap_tol = Float64(options[:relative_gap_tolerance])
         if rel_gap_tol < 0 || rel_gap_tol > 1
             throw(Error(NotAllowed, "Relative gap tolerance must be within [0,1]."))
         end
@@ -412,9 +420,10 @@ function set_options!(model::MOI.ModelLike, options::JSON3.Object)#::Nothing
         MOI.set(model, MOI.RelativeGapTolerance(), rel_gap_tol)
     end
 
-    if MOI.supports(model, MOI.AbsoluteGapTolerance())
+    if MOI.supports(model, MOI.AbsoluteGapTolerance()) &&
+       haskey(options, :absolute_gap_tolerance)
         # Set absolute gap tolerance 
-        abs_gap_tol = Float64(get(options, :absolute_gap_tolerance, 1e-10))
+        abs_gap_tol = Float64(options[:absolute_gap_tolerance])
         if abs_gap_tol < 0
             throw(Error(NotAllowed, "Absolute gap tolerance must be non-negative."))
         end
