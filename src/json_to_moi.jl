@@ -92,6 +92,20 @@ function add_cons!(
         end
         MOI.add_constraint(model, v, MOI.Integer())
         MOI.add_constraint(model, v, MOI.Interval{T}(a[2], a[3]))
+    elseif head == "in"
+        if length(a) < 3
+            msg = "The relational application constraint expects at least two arguments."
+            throw(Error(InvalidModel, msg))
+        end
+        exprs = [canonicalize_SNF(T, json_to_snf(a[i], vars_map)) for i in 2:length(a)-1]
+        vecs = a[end]
+        if !(vecs isa JSON3.Array) || !all(length(row) == length(exprs) for row in vecs)
+            msg = "The relational application constraint is malformed."
+            throw(Error(InvalidModel, msg))
+        end
+        mat = convert(Matrix{T}, stack(vecs, dims = 1))
+        vaf = MOI.Utilities.operate(vcat, T, exprs...)
+        MOI.add_constraint(model, vaf, MOI.Table(mat))
     elseif head == "implies" && solver_info[:use_indicator]
         # TODO maybe just check if model supports indicator constraints
         # use an MOI indicator constraint
