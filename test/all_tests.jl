@@ -122,6 +122,8 @@ end
         ("abs_gap_out_of_range", "NotAllowed"),
         # relative_gap_tolerance must be within [0,1] 
         ("rel_gap_out_of_range", "NotAllowed"),
+        # absolute_gap_tolerance set for non-mip solvers such as MiniZinc or CSP2SAT
+        ("abs_gap_non_mip_solvers", "NotAllowed"),
         # relative_gap_tolerance set for non-mip solvers such as MiniZinc or CSP2SAT
         ("rel_gap_non_mip_solvers", "NotAllowed"),
         # unsupported sense such as 'feasibility'
