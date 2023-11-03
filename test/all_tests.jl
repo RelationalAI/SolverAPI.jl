@@ -81,6 +81,8 @@ end
     # solve and check output is expected for each input json file
     @testset "$j" for j in json_names
         output = JSON3.read(run_solve(read_json("inputs", j)))
+        @info output
+        #isdefined(Main, :Infiltrator) && Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
         @test output.solver_version isa String
         @test output.solve_time_sec isa Float64
         expect = JSON3.read(read_json("outputs", j))
@@ -122,6 +124,10 @@ end
         ("feas_with_obj", "InvalidFormat"),
         # no objective function specified for a minimization problem
         ("min_no_obj", "InvalidFormat"),
+        # absolute_gap_tolerance out of range, e.g., -0.1
+        ("abs_gap_out_of_range", "NotAllowed"),
+        # relative_gap_tolerance must be within [0,1] 
+        ("rel_gap_out_of_range", "NotAllowed"),
         # unsupported sense such as 'feasibility'
         ("unsupported_sense", "InvalidFormat"),
         # range: wrong number of args
