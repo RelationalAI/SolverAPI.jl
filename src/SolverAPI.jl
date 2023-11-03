@@ -113,9 +113,10 @@ function response(
     result_count = MOI.get(model, MOI.ResultCount())
 
     try
-        res["relative_gap"] = Float64(MOI.get(model, MOI.RelativeGap()))
-        if isinf(res["relative_gap"])
-            res["relative_gap"] = nothing # Inf cannot be serialized to JSON
+        res["relative_gap"]
+        rel_gap = Float64(MOI.get(model, MOI.RelativeGap()))
+        if isinf(rel_gap)
+            res["relative_gap"] = rel_gap# Inf cannot be serialized to JSON
         end
     catch
         # ignore if solver does not support relative gap 
