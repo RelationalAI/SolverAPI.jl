@@ -109,9 +109,6 @@ function response(
     end
 
     res["solve_time_sec"] = Float64(MOI.get(model, MOI.SolveTimeSec()))
-    res["relative_gap"] = Float64(MOI.get(model, MOI.RelativeGap()))
-    res["relative_gap_tolerance"] = Float64(MOI.get(model, MOI.RelativeGapTolerance()))
-    res["absolute_gap_tolerance"] = Float64(MOI.get(model, MOI.AbsoluteGapTolerance()))
 
     result_count = MOI.get(model, MOI.ResultCount())
 
