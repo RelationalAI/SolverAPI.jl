@@ -122,6 +122,10 @@ end
         ("feas_with_obj", "InvalidFormat"),
         # no objective function specified for a minimization problem
         ("min_no_obj", "InvalidFormat"),
+        # absolute_gap_tolerance out of range, e.g., -0.1
+        ("abs_gap_out_of_range", "NotAllowed"),
+        # relative_gap_tolerance must be within [0,1] 
+        ("rel_gap_out_of_range", "NotAllowed"),
         # unsupported sense such as 'feasibility'
         ("unsupported_sense", "InvalidFormat"),
         # range: wrong number of args
