@@ -416,7 +416,6 @@ function set_options!(model::MOI.ModelLike, options::JSON3.Object)#::Nothing
             throw(Error(NotAllowed, "Relative gap tolerance must be within [0,1]."))
         end
 
-        @info "Setting relative gap tolerance = $rel_gap_tol"
         MOI.set(model, MOI.RelativeGapTolerance(), rel_gap_tol)
     end
 
@@ -427,7 +426,7 @@ function set_options!(model::MOI.ModelLike, options::JSON3.Object)#::Nothing
         if abs_gap_tol < 0
             throw(Error(NotAllowed, "Absolute gap tolerance must be non-negative."))
         end
-        @info "Setting abs gap tolerance = $abs_gap_tol"
+
         MOI.set(model, MOI.AbsoluteGapTolerance(), abs_gap_tol)
     end
 
