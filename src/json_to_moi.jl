@@ -36,17 +36,11 @@ function add_cons!(
     vars_map::Dict,
     solver_info::Dict,
 ) where {T<:Real}
+    isempty(a) && return nothing
     head = a[1]
     if head == "and"
-        for i in eachindex(a)
-            i == 1 && continue
-            if a[i] isa Bool
-                if !a[i]
-                    throw(Error(InvalidModel, "Model is infeasible."))
-                end
-            else
-                add_cons!(T, model, a[i], vars_map, solver_info)
-            end
+        for i in 2:length(a)
+            add_cons!(T, model, a[i], vars_map, solver_info)
         end
     elseif head == "Int"
         v = json_to_snf(a[2], vars_map)
@@ -153,6 +147,11 @@ function add_cons!(
             ci = MOI.Utilities.normalize_and_add_constraint(model, g, s)
         end
     end
+    return nothing
+end
+
+function add_cons!(::Type{<:Real}, ::MOI.ModelLike, a::A, ::Dict, ::Dict) where {A}
+    throw(Error(Unsupported, "Argument $a has type $A but should be a JSON array."))
     return nothing
 end
 

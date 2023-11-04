@@ -76,6 +76,7 @@ end
         "in_con_csp",
         "in_con_const_mip",
         "in_con_expr_csp",
+        "empty_arr_con",
     ]
 
     # solve and check output is expected for each input json file
