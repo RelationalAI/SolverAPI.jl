@@ -85,6 +85,10 @@ We always support the following options:
     and not solved.
   - `print_format`: [String] If and how the model should be printed.
     Currently supported formats: MOI, LaTeX, MOF, LP, MPS, NL.
+  - `relative_gap_tolerance`: [Float64] The relative gap
+    tolerance. Must be within [0,1].
+  - `absolute_gap_tolerance`: [Float64] Absolute gap tolerance. Must
+    be non-negative.
 
 ### Response
 
@@ -105,7 +109,10 @@ Response format examples:
       ]
     }
   ],
-  "termination_status": "OPTIMAL"
+  "termination_status": "OPTIMAL",
+  "solve_time_sec": 0.000112959,
+  "solver_version": "HiGHS_1.5.3",
+  "relative_gap": 0.0
 }
 ```
 
@@ -148,3 +155,6 @@ Optional fields:
   - `errors`: [Array] None, one, or multiple errors that were present.
   - `model_string`: [String] If requested via `print_format` the model
     as a string.
+  - `solver_version`: [String] The version of the solver used.
+  - `solve_time_sec`: [Float64] Duration of solving.
+  - `relative_gap`: [Float64] The relative gap.
