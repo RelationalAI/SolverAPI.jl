@@ -64,7 +64,7 @@ function add_cons!(
         MOI.add_constraint(model, f, MOI.EqualTo(1))
     elseif head == "interval"
         if length(a) != 4
-            throw(Error(InvalidModel, "The `interval` constraint expects 3 arguments."))
+            throw(Error(InvalidModel, "The `interval` constraint expects three arguments."))
         end
         v = json_to_snf(a[4], vars_map)
         _check_v_type(v)
@@ -74,7 +74,7 @@ function add_cons!(
         MOI.add_constraint(model, v, MOI.Interval{T}(T(a[2]), T(a[3])))
     elseif head == "range"
         if length(a) != 5
-            throw(Error(InvalidModel, "The `range` constraint expects 4 arguments."))
+            throw(Error(InvalidModel, "The `range` constraint expects four arguments."))
         end
         v = json_to_snf(a[5], vars_map)
         _check_v_type(v)
@@ -87,17 +87,20 @@ function add_cons!(
         MOI.add_constraint(model, v, MOI.Integer())
         MOI.add_constraint(model, v, MOI.Interval{T}(a[2], a[3]))
     elseif head == "in"
-        if length(a) < 3
-            msg = "The relational application constraint expects at least two arguments."
+        if length(a) != 3
+            msg = "The relational application constraint expects two arguments."
             throw(Error(InvalidModel, msg))
         end
-        exprs = [canonicalize_SNF(T, json_to_snf(a[i], vars_map)) for i in 2:length(a)-1]
-        vecs = a[end]
-        if !(vecs isa JSON3.Array) || !all(length(row) == length(exprs) for row in vecs)
-            msg = "The relational application constraint is malformed."
+        if !isa(a[2], JSON3.Array) || !isa(a[3], JSON3.Array)
+            msg = "The relational application constraint expects JSON arrays as both arguments."
             throw(Error(InvalidModel, msg))
         end
-        mat = convert(Matrix{T}, stack(vecs, dims = 1))
+        exprs = [canonicalize_SNF(T, json_to_snf(a2i, vars_map)) for a2i in a[2]]
+        if !all(length(row) == length(exprs) for row in a[3])
+            msg = "The relational application constraint tuple dimensions do not match."
+            throw(Error(InvalidModel, msg))
+        end
+        mat = convert(Matrix{T}, stack(a[3], dims = 1))
         vaf = MOI.Utilities.operate(vcat, T, exprs...)
         MOI.add_constraint(model, vaf, MOI.Table(mat))
     elseif head == "implies" && solver_info[:use_indicator]
@@ -109,7 +112,7 @@ function add_cons!(
         f = json_to_snf(a[2], vars_map)
         g = json_to_snf(a[3], vars_map)
         if !(f.head == :(==) && length(f.args) == 2)
-            msg = "The first argument of the `implies` constraint expects to be converted to an equality SNF with 2 arguments."
+            msg = "The first argument of the `implies` constraint expects to be converted to an equality SNF with two arguments."
             throw(Error(InvalidModel, msg))
         end
 
@@ -123,7 +126,7 @@ function add_cons!(
         A = (b == 1) ? MOI.ACTIVATE_ON_ONE : MOI.ACTIVATE_ON_ZERO
         S1 = get(ineq_to_moi, g.head, nothing)
         if isnothing(S1) || length(g.args) != 2
-            msg = "The second argument of the `implies` constraint expects to be converted to an (in)equality SNF with 2 arguments."
+            msg = "The second argument of the `implies` constraint expects to be converted to an (in)equality SNF with two arguments."
             throw(Error(InvalidModel, msg))
         end
 
