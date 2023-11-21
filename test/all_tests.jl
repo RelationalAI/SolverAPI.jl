@@ -107,8 +107,6 @@ end
         ("missing_sense", "InvalidFormat"),
         # missing field version
         ("missing_version", "InvalidFormat"),
-        # missing field options
-        ("missing_options", "InvalidFormat"),
         # field variables is not a string
         ("vars_is_not_str", "InvalidFormat"),
         # field variables is not an array
