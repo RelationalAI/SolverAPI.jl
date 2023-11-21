@@ -1,1 +1,1 @@
-{"termination_status":"OPTIMAL","results":[{"names":["\"x_1\"","\"x_2\""],"values":[-2.5,3],"primal_status":"FEASIBLE_POINT","objective_value":0.5}],"version":"0.1"}
+{"termination_status":"OPTIMAL","results":[{"values":[-2.5,3],"primal_status":"FEASIBLE_POINT","objective_value":0.5}],"version":"0.1"}

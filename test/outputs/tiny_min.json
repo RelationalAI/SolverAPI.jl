@@ -1,1 +1,1 @@
-{"model_string":"$$ \\begin{aligned}\n\\min\\quad & x \\\\\n\\text{Subject to}\\\\\n & x = 1 \\\\\n & x \\in \\mathbb{Z} \\\\\n\\end{aligned} $$","termination_status":"OPTIMAL","results":[{"names":["\"x\""],"values":[1.0],"primal_status":"FEASIBLE_POINT","objective_value":1.0}],"version":"0.1"}
+{"model_string":"$$ \\begin{aligned}\n\\min\\quad & x \\\\\n\\text{Subject to}\\\\\n & x = 1 \\\\\n & x \\in \\mathbb{Z} \\\\\n\\end{aligned} $$","termination_status":"OPTIMAL","results":[{"values":[1.0],"primal_status":"FEASIBLE_POINT","objective_value":1.0}],"version":"0.1"}

@@ -129,10 +129,6 @@ function response(
         r = results[idx]
 
         r["primal_status"] = string(MOI.get(model, MOI.PrimalStatus(idx)))
-
-        # TODO: It is redundant to return the names for every result, since they are fixed -
-        # try relying on fixed vector ordering and don't return names.
-        r["names"] = var_names
         r["values"] = MOI.get(model, MOI.VariablePrimal(idx), var_idxs)
 
         if json.sense != "feas"
