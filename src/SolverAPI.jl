@@ -332,7 +332,7 @@ function validate(json::Request)#::Vector{Error}
     valid_shape = true
 
     # Syntax.
-    for k in [:version, :sense, :variables, :constraints, :objectives, :options]
+    for k in [:version, :sense, :variables, :constraints, :objectives]
         if !haskey(json, k)
             valid_shape = false
             _err("Missing required field `$(k)`.")
@@ -350,10 +350,6 @@ function validate(json::Request)#::Vector{Error}
         _err("Invalid version `$(repr(json.version))`. Only `\"0.1\"` is supported.")
     end
 
-    if !isa(json.options, JSON3.Object)
-        _err("Invalid `options` field. Must be an object.")
-    end
-
     for k in [:variables, :constraints, :objectives]
         if !isa(json[k], JSON3.Array)
             _err("Invalid `$(k)` field. Must be an array.")
@@ -369,18 +365,20 @@ function validate(json::Request)#::Vector{Error}
         _err("Invalid `sense` field. Must be one of `feas`, `min`, or `max`.")
     end
 
-    for (T, k) in [(String, :print_format), (Number, :time_limit_sec)]
-        if haskey(json.options, k) && !isa(json.options[k], T)
-            _err("Invalid `options.$(k)` field. Must be of type `$(T)`.")
+    if haskey(json, :options)
+        for (T, k) in [(String, :print_format), (Number, :time_limit_sec)]
+            if haskey(json.options, k) && !isa(json.options[k], T)
+                _err("Invalid `options.$(k)` field. Must be of type `$(T)`.")
+            end
         end
-    end
 
-    for k in [:silent, :print_only]
-        if haskey(json.options, k)
-            val = json.options[k]
-            # We allow `0` and `1` for convenience.
-            if !isa(val, Bool) && val isa Number && val != 0 && val != 1
-                _err("Invalid `options.$(k)` field. Must be a boolean.")
+        for k in [:silent, :print_only]
+            if haskey(json.options, k)
+                val = json.options[k]
+                # We allow `0` and `1` for convenience.
+                if !isa(val, Bool) && val isa Number && val != 0 && val != 1
+                    _err("Invalid `options.$(k)` field. Must be a boolean.")
+                end
             end
         end
     end
