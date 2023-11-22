@@ -362,6 +362,10 @@ function validate(json::Request)#::Vector{Error}
         _err("Invalid version `$(repr(json.version))`. Only `\"0.1\"` is supported.")
     end
 
+    if haskey(json, :options) && !isa(json.options, JSON3.Object)
+        _err("Invalid `options` field. Must be an object.")
+    end
+
     for k in [:variables, :constraints, :objectives]
         if !isa(json[k], JSON3.Array)
             _err("Invalid `$(k)` field. Must be an array.")
