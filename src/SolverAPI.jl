@@ -99,12 +99,18 @@ function response(
 
     res["termination_status"] = string(MOI.get(model, MOI.TerminationStatus()))
 
-    format = get(json.options, :print_format, nothing)
+    options = if haskey(json, :options)
+        json.options
+    else
+        JSON3.Object()
+    end
+
+    format = get(options, :print_format, nothing)
     if !isnothing(format)
         res["model_string"] = print_model(model, format)
     end
 
-    if Bool(get(json.options, :print_only, false))
+    if Bool(get(options, :print_only, false))
         return res
     end
 
@@ -186,10 +192,16 @@ function _solve(fn, json::Request, solver::MOI.AbstractOptimizer; kw...)
     )
 
     try
-        set_options!(model, json.options)
+        options = if haskey(json, :options)
+            json.options
+        else
+            JSON3.Object()
+        end
+
+        set_options!(model, options)
         load!(model, json, solver_info)
         fn(model)
-        if !Bool(get(json.options, :print_only, false))
+        if !Bool(get(options, :print_only, false))
             MOI.optimize!(model)
         end
         return response(json, model, solver)
