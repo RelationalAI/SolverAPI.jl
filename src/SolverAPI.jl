@@ -99,12 +99,18 @@ function response(
 
     res["termination_status"] = string(MOI.get(model, MOI.TerminationStatus()))
 
-    format = get(json.options, :print_format, nothing)
+    options = if haskey(json, :options)
+        json.options
+    else
+        JSON3.Object()
+    end
+
+    format = get(options, :print_format, nothing)
     if !isnothing(format)
         res["model_string"] = print_model(model, format)
     end
 
-    if Bool(get(json.options, :print_only, false))
+    if Bool(get(options, :print_only, false))
         return res
     end
 
@@ -182,10 +188,16 @@ function _solve(fn, json::Request, solver::MOI.AbstractOptimizer; kw...)
     )
 
     try
-        set_options!(model, json.options)
+        options = if haskey(json, :options)
+            json.options
+        else
+            JSON3.Object()
+        end
+
+        set_options!(model, options)
         load!(model, json, solver_info)
         fn(model)
-        if !Bool(get(json.options, :print_only, false))
+        if !Bool(get(options, :print_only, false))
             MOI.optimize!(model)
         end
         return response(json, model, solver)
@@ -328,7 +340,7 @@ function validate(json::Request)#::Vector{Error}
     valid_shape = true
 
     # Syntax.
-    for k in [:version, :sense, :variables, :constraints, :objectives, :options]
+    for k in [:version, :sense, :variables, :constraints, :objectives]
         if !haskey(json, k)
             valid_shape = false
             _err("Missing required field `$(k)`.")
@@ -346,7 +358,7 @@ function validate(json::Request)#::Vector{Error}
         _err("Invalid version `$(repr(json.version))`. Only `\"0.1\"` is supported.")
     end
 
-    if !isa(json.options, JSON3.Object)
+    if haskey(json, :options) && !isa(json.options, JSON3.Object)
         _err("Invalid `options` field. Must be an object.")
     end
 
@@ -365,18 +377,20 @@ function validate(json::Request)#::Vector{Error}
         _err("Invalid `sense` field. Must be one of `feas`, `min`, or `max`.")
     end
 
-    for (T, k) in [(String, :print_format), (Number, :time_limit_sec)]
-        if haskey(json.options, k) && !isa(json.options[k], T)
-            _err("Invalid `options.$(k)` field. Must be of type `$(T)`.")
+    if haskey(json, :options)
+        for (T, k) in [(String, :print_format), (Number, :time_limit_sec)]
+            if haskey(json.options, k) && !isa(json.options[k], T)
+                _err("Invalid `options.$(k)` field. Must be of type `$(T)`.")
+            end
         end
-    end
 
-    for k in [:silent, :print_only]
-        if haskey(json.options, k)
-            val = json.options[k]
-            # We allow `0` and `1` for convenience.
-            if !isa(val, Bool) && val isa Number && val != 0 && val != 1
-                _err("Invalid `options.$(k)` field. Must be a boolean.")
+        for k in [:silent, :print_only]
+            if haskey(json.options, k)
+                val = json.options[k]
+                # We allow `0` and `1` for convenience.
+                if !isa(val, Bool) && val isa Number && val != 0 && val != 1
+                    _err("Invalid `options.$(k)` field. Must be a boolean.")
+                end
             end
         end
     end
