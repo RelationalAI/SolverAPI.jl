@@ -77,6 +77,7 @@ end
         "in_con_const_mip",
         "in_con_expr_csp",
         "empty_arr_con",
+        "no_options", # The `options` field is now optional. `HiGHS` will be used as the default solver.
     ]
 
     # solve and check output is expected for each input json file
