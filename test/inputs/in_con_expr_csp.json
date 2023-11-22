@@ -1,1 +1,1 @@
-{"version":"0.1","sense":"min","variables":["x_1","x_2"],"constraints":[["in",["+","x_2",1],"x_1",3,[[1,5,2],[-2,1,3]]],["Int","x_1"],["Int","x_2"]],"objectives":[["+","x_1","x_2"]],"options":{"solver":"minizinc"}}
+{"version":"0.1","sense":"min","variables":["x_1","x_2"],"constraints":[["in",[["+","x_2",1],"x_1",3],[[1,5,2],[-2,1,3]]],["Int","x_1"],["Int","x_2"]],"objectives":[["+","x_1","x_2"]],"options":{"solver":"minizinc"}}
