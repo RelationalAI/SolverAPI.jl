@@ -83,6 +83,7 @@ end
     # solve and check output is expected for each input json file
     @testset "$j" for j in json_names
         output = JSON3.read(run_solve(read_json("inputs", j)))
+        @info output
         @test output.solver_version isa String
         @test output.solve_time_sec isa Float64
         expect = JSON3.read(read_json("outputs", j))
