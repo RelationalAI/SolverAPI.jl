@@ -131,6 +131,9 @@ function response(
     var_names = [string('\"', v, '\"') for v in json.variables]
     var_idxs = MOI.get(model, MOI.ListOfVariableIndices())
 
+    # variables are global
+    res["variables"] = var_names
+
     for idx in 1:result_count
         r = results[idx]
 
