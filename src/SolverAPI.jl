@@ -132,7 +132,9 @@ function response(
     var_idxs = MOI.get(model, MOI.ListOfVariableIndices())
 
     # variables are global
-    res["variables"] = var_names
+    if result_count > 0
+        res["variables"] = var_names
+    end
 
     for idx in 1:result_count
         r = results[idx]
