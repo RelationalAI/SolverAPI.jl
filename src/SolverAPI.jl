@@ -124,11 +124,12 @@ function response(
             res["relative_gap"] = rel_gap # Inf cannot be serialized to JSON
         end
     catch
-        # ignore if solver does not support relative gap 
+        # ignore if solver does not support relative gap
     end
 
+    res["names"] = [string('\"', v, '\"') for v in json.variables]
+
     results = [Dict{String,Any}() for _ in 1:result_count]
-    var_names = [string('\"', v, '\"') for v in json.variables]
     var_idxs = MOI.get(model, MOI.ListOfVariableIndices())
 
     for idx in 1:result_count
@@ -136,9 +137,6 @@ function response(
 
         r["primal_status"] = string(MOI.get(model, MOI.PrimalStatus(idx)))
 
-        # TODO: It is redundant to return the names for every result, since they are fixed -
-        # try relying on fixed vector ordering and don't return names.
-        r["names"] = var_names
         r["values"] = MOI.get(model, MOI.VariablePrimal(idx), var_idxs)
 
         if json.sense != "feas"
@@ -424,7 +422,7 @@ function set_options!(model::MOI.ModelLike, options::JSON3.Object)#::Nothing
 
     if MOI.supports(model, MOI.RelativeGapTolerance()) &&
        haskey(options, :relative_gap_tolerance)
-        # Set relative gap tolerance 
+        # Set relative gap tolerance
         rel_gap_tol = Float64(options[:relative_gap_tolerance])
         if rel_gap_tol < 0 || rel_gap_tol > 1
             throw(Error(NotAllowed, "Relative gap tolerance must be within [0,1]."))
@@ -435,7 +433,7 @@ function set_options!(model::MOI.ModelLike, options::JSON3.Object)#::Nothing
 
     if MOI.supports(model, MOI.AbsoluteGapTolerance()) &&
        haskey(options, :absolute_gap_tolerance)
-        # Set absolute gap tolerance 
+        # Set absolute gap tolerance
         abs_gap_tol = Float64(options[:absolute_gap_tolerance])
         if abs_gap_tol < 0
             throw(Error(NotAllowed, "Absolute gap tolerance must be non-negative."))
