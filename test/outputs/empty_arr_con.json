@@ -1,2 +1,2 @@
-{"termination_status":"OPTIMAL","results":[{"names":["\"x\"","\"y\""],"values":[1.5,0.0],
+{"termination_status":"OPTIMAL","names":["\"x\"","\"y\""],"results":[{"values":[1.5,0.0],
 "primal_status":"FEASIBLE_POINT","objective_value":1.5}],"version":"0.1"}
