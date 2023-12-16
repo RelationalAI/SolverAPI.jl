@@ -1,1 +1,1 @@
-{"version":"0.1","sense":"min","variables":["x","y"],"constraints":[["and",["==",["+","x",["*",3,"y"]],1],[">=",["+","x","y"],1]],["and",["Int","x"],["Nonneg","x"]],["Int","y"]],"objectives":[["+",["*",2,"x"],"y"]],"options":{"solver":"HiGHS"}}
+{"version":"0.1","sense":"min","variables":["x","y"],"constraints":[["and",["==",["+","x",["*",3,"y"]],1],[">=",["+","x","y"],1]],["and",["Int","x"],[">=","x",0]],["Bin","y"]],"objectives":[["+",["*",2,"x"],"y"]],"options":{"solver":"HiGHS"}}

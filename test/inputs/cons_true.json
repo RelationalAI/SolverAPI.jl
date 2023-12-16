@@ -1,1 +1,1 @@
-{"version":"0.1","sense":"feas","variables":["x_1","x_2"],"constraints":[["==",0,0],["Nonneg","x_1"],["Nonneg","x_2"]],"objectives":[],"options":{"solver":"highs"}}
+{"version":"0.1","sense":"feas","variables":["x_1","x_2"],"constraints":[["==",0,0],[">=","x_1",0],[">=","x_2",0]],"objectives":[],"options":{"solver":"highs"}}

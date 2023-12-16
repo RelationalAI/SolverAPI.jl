@@ -1,1 +1,1 @@
-{"version":"0.1","sense":"min","variables":["x","y"],"constraints":[[">=","x",1.5],[],["Nonneg","x"],["Nonneg","y"]],"objectives":[["+","x","y"]],"options":{"solver":"HiGHS"}}
+{"version":"0.1","sense":"min","variables":["x","y"],"constraints":[[">=","x",1.5],[],[">=","x",0],[">=","y",0]],"objectives":[["+","x","y"]],"options":{"solver":"HiGHS"}}

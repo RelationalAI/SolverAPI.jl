@@ -51,10 +51,7 @@ function add_cons!(
         _check_v_type(v)
         MOI.add_constraint(model, v, MOI.ZeroOne())
     elseif head == "Float"
-    elseif head == "Nonneg"
-        v = json_to_snf(a[2], vars_map)
-        _check_v_type(v)
-        MOI.add_constraint(model, v, MOI.GreaterThan(zero(T)))
+        # no-op
     elseif head == "PosNegOne"
         v = json_to_snf(a[2], vars_map)
         _check_v_type(v)
@@ -62,16 +59,6 @@ function add_cons!(
         MOI.add_constraint(model, v, MOI.Integer())
         f = MOI.ScalarNonlinearFunction(:abs, Any[v])
         MOI.add_constraint(model, f, MOI.EqualTo(1))
-    elseif head == "interval"
-        if length(a) != 4
-            throw(Error(InvalidModel, "The `interval` constraint expects three arguments."))
-        end
-        v = json_to_snf(a[4], vars_map)
-        _check_v_type(v)
-        if !(a[2] isa Number && a[3] isa Number)
-            throw(Error(InvalidModel, "The `interval` constraint expects number bounds."))
-        end
-        MOI.add_constraint(model, v, MOI.Interval{T}(T(a[2]), T(a[3])))
     elseif head == "range"
         if length(a) != 5
             throw(Error(InvalidModel, "The `range` constraint expects four arguments."))
@@ -159,7 +146,7 @@ function add_cons!(::Type{<:Real}, ::MOI.ModelLike, a::A, ::Dict, ::Dict) where 
 end
 
 _check_v_type(::MOI.VariableIndex) = nothing
-_check_v_type(_) =
+_check_v_type(v::Any) =
     throw(Error(InvalidModel, "$v must be a `MOI.VariableIndex`, not $(typeof(v))."))
 
 ineq_to_moi = Dict(:<= => MOI.LessThan, :>= => MOI.GreaterThan, :(==) => MOI.EqualTo)

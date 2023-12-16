@@ -63,7 +63,6 @@ end
     # names of JSON files in inputs/ and outputs/ folders
     json_names = [
         "feas_range",
-        "min_interval",
         "tiny_min",
         "tiny_feas",
         "tiny_infeas",
@@ -132,8 +131,6 @@ end
         ("incorrect_range_num_params", "InvalidModel"),
         # range: step not one
         ("incorrect_range_step_not_1", "InvalidModel"),
-        # interval: wrong number of args
-        ("incorrect_interval_num_params", "InvalidModel"),
         # relational application constraint malformed
         ("in_con_malformed", "InvalidModel"),
         # unsupported objective function type
