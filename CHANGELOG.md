@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Make `options` field optional [#22](https://github.com/RelationalAI/SolverAPI.jl/pull/22)
   - Remove `names` field in results [#20](https://github.com/RelationalAI/SolverAPI.jl/pull/20)
   - Update format to use JSON vector for relational appl constraint
-  args [#21](https://github.com/RelationalAI/SolverAPI.jl/pull/21)
+    args [#21](https://github.com/RelationalAI/SolverAPI.jl/pull/21)
 
 ## [0.2.2]
 
