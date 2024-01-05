@@ -92,6 +92,35 @@ end
     end
 end
 
+@testitem "solve - params" setup = [SolverSetup] begin
+    import JSON3
+    import HiGHS
+
+    using SolverAPI
+
+    tiny_min = JSON3.read(
+        JSON3.write(
+            Dict(
+                "version" => "0.1",
+                "sense" => "min",
+                "variables" => ["x"],
+                "constraints" => [["==", "x", 1], ["Int", "x"]],
+                "objectives" => ["x"],
+            ),
+        ),
+    )
+
+    # We can pass options to the solver via `params` as well. The
+    # `solver` key will be ignored.
+    result = solve(
+        tiny_min,
+        HiGHS.Optimizer(),
+        Dict{Symbol,Any}(:time_limit_sec => 0, :presolve => "off", :solver => "highs"),
+    )
+
+    @test result["termination_status"] == "TIME_LIMIT"
+end
+
 @testitem "errors" setup = [SolverSetup] begin
     using SolverAPI
     import JSON3
