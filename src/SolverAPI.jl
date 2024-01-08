@@ -484,8 +484,6 @@ function set_options!(model::MOI.ModelLike, options::Dict{Symbol,Any})#::Nothing
 
     return nothing
 end
-set_options!(model::MOI.ModelLike, options::JSON3.Object) =
-    set_options!(model, copy(options))
 
 function load!(model::MOI.ModelLike, json::Request, solver_info::Dict{Symbol,Any})#::Nothing
     T = solver_info[:numerical_type]
