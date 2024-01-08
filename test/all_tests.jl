@@ -47,13 +47,11 @@ end # end of setup module.
         :variables => ["x"],
         :constraints => [["==", "x", 1], ["Int", "x"]],
         :objectives => ["x"],
-        :options => Dict(:print_format => "none"),
     )
 
     # check MOI model printing for each format
     @testset "$f" for f in ["moi", "latex", "mof", "lp", "mps", "nl"]
-        json[:options][:print_format] = f
-        @test print_model(json) isa String
+        @test print_model(json, f) isa String
     end
 end
 
@@ -92,7 +90,36 @@ end
     end
 end
 
-@testitem "solve - params" setup = [SolverSetup] begin
+@testitem "solve - only params" setup = [SolverSetup] begin
+    import JSON3
+    import HiGHS
+
+    using SolverAPI
+
+    # The `options` field will be merged with the `params` argument.
+    tiny_min = JSON3.read(
+        JSON3.write(
+            Dict(
+                "version" => "0.1",
+                "sense" => "min",
+                "variables" => ["x"],
+                "constraints" => [["==", "x", 1], ["Int", "x"]],
+                "objectives" => ["x"],
+                "options" => Dict("presolve" => "off"),
+            ),
+        ),
+    )
+
+    result = solve(
+        tiny_min,
+        HiGHS.Optimizer(),
+        Dict{Symbol,Any}(:time_limit_sec => 0, :solver => "highs"),
+    )
+
+    @test result["termination_status"] == "TIME_LIMIT"
+end
+
+@testitem "solve - params and options" setup = [SolverSetup] begin
     import JSON3
     import HiGHS
 
@@ -117,6 +144,33 @@ end
         HiGHS.Optimizer(),
         Dict{Symbol,Any}(:time_limit_sec => 0, :presolve => "off", :solver => "highs"),
     )
+
+    @test result["termination_status"] == "TIME_LIMIT"
+end
+
+@testitem "solve - params as JSON" setup = [SolverSetup] begin
+    import JSON3
+    import HiGHS
+
+    using SolverAPI
+
+    tiny_min = JSON3.read(
+        JSON3.write(
+            Dict(
+                "version" => "0.1",
+                "sense" => "min",
+                "variables" => ["x"],
+                "constraints" => [["==", "x", 1], ["Int", "x"]],
+                "objectives" => ["x"],
+            ),
+        ),
+    )
+
+    params = Dict{Symbol,Any}(:time_limit_sec => 0, :presolve => "off", :solver => "highs")
+
+    # Passing params as `JSON3.Object` is also supported to avoid a
+    # copy.
+    result = solve(tiny_min, HiGHS.Optimizer(), JSON3.read(JSON3.write(params)))
 
     @test result["termination_status"] == "TIME_LIMIT"
 end
