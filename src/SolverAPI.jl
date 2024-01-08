@@ -59,6 +59,7 @@ Return a response
   - `request::SolverAPI.Request`: [optionally] The request that was received.
   - `model::MOI.ModelLike`: [optionally] The model that was solved.
   - `solver::MOI.AbstractOptimizer`: [optionally] The solver that was used.
+  - `params::Dict{Symbol,Any}`: [optionally] Solver parameters.
 
 ## Keyword Args
 
@@ -81,7 +82,8 @@ response(error::Error; kw...) = response(; errors = [error], kw...)
 function response(
     json::Request,
     model::MOI.ModelLike,
-    solver::MOI.AbstractOptimizer;
+    solver::MOI.AbstractOptimizer,
+    params::Dict{Symbol,Any};
     version = "0.1",
     kw...,
 )
@@ -100,9 +102,9 @@ function response(
     res["termination_status"] = string(MOI.get(model, MOI.TerminationStatus()))
 
     options = if haskey(json, :options)
-        json.options
+        merge(json.options, params)
     else
-        JSON3.Object()
+        params
     end
 
     format = get(options, :print_format, nothing)
@@ -208,7 +210,7 @@ function _solve(
         if !Bool(get(options, :print_only, false))
             MOI.optimize!(model)
         end
-        return response(json, model, solver)
+        return response(json, model, solver, params)
     catch e
         _err(E) = response(Error(E, sprint(Base.showerror, e)))
         if e isa MOI.UnsupportedError

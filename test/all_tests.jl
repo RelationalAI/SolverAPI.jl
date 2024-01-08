@@ -175,6 +175,63 @@ end
     @test result["termination_status"] == "TIME_LIMIT"
 end
 
+@testitem "solve - print only" setup = [SolverSetup] begin
+    import JSON3
+    import HiGHS
+
+    using SolverAPI
+
+    tiny_min = JSON3.read(
+        JSON3.write(
+            Dict(
+                "version" => "0.1",
+                "sense" => "min",
+                "variables" => ["x"],
+                "constraints" => [["==", "x", 1], ["Int", "x"]],
+                "objectives" => ["x"],
+                "options" => Dict("print_only" => true, "print_format" => "latex"),
+            ),
+        ),
+    )
+
+    result = solve(
+        tiny_min,
+        HiGHS.Optimizer()
+    )
+
+    @test result["termination_status"] == "OPTIMIZE_NOT_CALLED"
+    @test result["model_string"] isa String
+end
+
+@testitem "solve - print only both params and options" setup = [SolverSetup] begin
+    import JSON3
+    import HiGHS
+
+    using SolverAPI
+
+    tiny_min = JSON3.read(
+        JSON3.write(
+            Dict(
+                "version" => "0.1",
+                "sense" => "min",
+                "variables" => ["x"],
+                "constraints" => [["==", "x", 1], ["Int", "x"]],
+                "objectives" => ["x"],
+                "options" => Dict("print_format" => "latex"),
+            ),
+        ),
+    )
+
+    result = solve(
+        tiny_min,
+        HiGHS.Optimizer(),
+        Dict{Symbol,Any}(:print_only => true)
+    )
+
+    @test result["termination_status"] == "OPTIMIZE_NOT_CALLED"
+    @test result["model_string"] isa String
+end
+
 @testitem "errors" setup = [SolverSetup] begin
     using SolverAPI
     import JSON3
