@@ -46,14 +46,12 @@ end # end of setup module.
         :sense => "min",
         :variables => ["x"],
         :constraints => [["==", "x", 1], ["Int", "x"]],
-        :objectives => ["x"],
-        :options => Dict(:print_format => "none"),
+        :objectives => ["x"]
     )
 
     # check MOI model printing for each format
     @testset "$f" for f in ["moi", "latex", "mof", "lp", "mps", "nl"]
-        json[:options][:print_format] = f
-        @test print_model(json) isa String
+        @test print_model(json, f) isa String
     end
 end
 
