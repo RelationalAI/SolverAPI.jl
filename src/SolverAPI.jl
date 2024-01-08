@@ -181,7 +181,7 @@ function _solve(
     fn,
     json::Request,
     solver::MOI.AbstractOptimizer,
-    params::Dict{Symbol,Any};
+    params::Union{JSON3.Object, Dict{Symbol,Any}};
     kw...,
 )
     errors = validate(json)
@@ -274,7 +274,7 @@ solve(request, solver, params = Dict{Symbol,Any}(); kw...) =
     solve(model -> nothing, request, solver, params; kw...)
 
 """
-    print_model(request::Request; <kwargs>)::String
+    print_model(request::Request, format::String; <kwargs>)::String
     print_model(model::MOI.ModelLike, format::String)::String
 
 Print the `model`. `format` options (case-insensitive) are:
@@ -323,7 +323,8 @@ function print_model(model::MOI.ModelLike, format::String)
     return sprint(write, dest)
 end
 function print_model(
-    request::Request;
+    request::Request,
+    format::String;
     use_indicator::Bool = true,
     numerical_type::Type{<:Real} = Float64,
 )
@@ -332,9 +333,6 @@ function print_model(
         throw(CompositeException(errors))
     end
 
-    # Default to MOI format.
-    format = get(request.options, :print_format, "MOI")
-
     solver_info =
         Dict{Symbol,Any}(:use_indicator => use_indicator, :numerical_type => numerical_type)
     model = MOI.Utilities.Model{numerical_type}()
@@ -342,7 +340,7 @@ function print_model(
     load!(model, request, solver_info)
     return print_model(model, format)
 end
-print_model(request::Dict; kw...) = print_model(JSON3.read(JSON3.write(request)); kw...)
+print_model(request::Dict, format::String; kw...) = print_model(JSON3.read(JSON3.write(request)), format; kw...)
 
 # Internal
 # ========================================================================================
