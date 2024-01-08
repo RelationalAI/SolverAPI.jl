@@ -181,7 +181,7 @@ function _solve(
     fn,
     json::Request,
     solver::MOI.AbstractOptimizer,
-    params::Union{JSON3.Object, Dict{Symbol,Any}};
+    params::Dict{Symbol,Any};
     kw...,
 )
     errors = validate(json)
@@ -197,8 +197,7 @@ function _solve(
 
     try
         options = if haskey(json, :options)
-            # Copy the JSON to make it into a `Dict{Symbol,Any}`.
-            merge(copy(json.options), params)
+            merge(json.options, params)
         else
             params
         end
@@ -268,7 +267,15 @@ function solve(
     use_indicator::Bool = true,
     numerical_type::Type{<:Real} = Float64,
 )
-    return _solve(fn, request, solver, params; use_indicator, numerical_type)
+    # We support passing `params` as `JSON3.Object`.
+    return _solve(
+        fn,
+        request,
+        solver,
+        convert(Dict{Symbol,Any}, params);
+        use_indicator,
+        numerical_type,
+    )
 end
 solve(request, solver, params = Dict{Symbol,Any}(); kw...) =
     solve(model -> nothing, request, solver, params; kw...)
@@ -340,7 +347,8 @@ function print_model(
     load!(model, request, solver_info)
     return print_model(model, format)
 end
-print_model(request::Dict, format::String; kw...) = print_model(JSON3.read(JSON3.write(request)), format; kw...)
+print_model(request::Dict, format::String; kw...) =
+    print_model(JSON3.read(JSON3.write(request)), format; kw...)
 
 # Internal
 # ========================================================================================
@@ -476,6 +484,8 @@ function set_options!(model::MOI.ModelLike, options::Dict{Symbol,Any})#::Nothing
 
     return nothing
 end
+set_options!(model::MOI.ModelLike, options::JSON3.Object) =
+    set_options!(model, copy(options))
 
 function load!(model::MOI.ModelLike, json::Request, solver_info::Dict{Symbol,Any})#::Nothing
     T = solver_info[:numerical_type]
