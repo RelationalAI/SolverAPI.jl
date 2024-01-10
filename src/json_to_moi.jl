@@ -146,7 +146,7 @@ function add_cons!(::Type{<:Real}, ::MOI.ModelLike, a::A, ::Dict, ::Dict) where 
 end
 
 _check_v_type(::MOI.VariableIndex) = nothing
-_check_v_type(v::Any) =
+_check_v_type(v) =
     throw(Error(InvalidModel, "$v must be a `MOI.VariableIndex`, not $(typeof(v))."))
 
 ineq_to_moi = Dict(:<= => MOI.LessThan, :>= => MOI.GreaterThan, :(==) => MOI.EqualTo)

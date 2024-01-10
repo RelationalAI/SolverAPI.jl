@@ -59,6 +59,7 @@ Return a response
   - `request::SolverAPI.Request`: [optionally] The request that was received.
   - `model::MOI.ModelLike`: [optionally] The model that was solved.
   - `solver::MOI.AbstractOptimizer`: [optionally] The solver that was used.
+  - `params::Dict{Symbol,Any}`: [optionally] Solver parameters.
 
 ## Keyword Args
 
@@ -81,7 +82,8 @@ response(error::Error; kw...) = response(; errors = [error], kw...)
 function response(
     json::Request,
     model::MOI.ModelLike,
-    solver::MOI.AbstractOptimizer;
+    solver::MOI.AbstractOptimizer,
+    params::Dict{Symbol,Any};
     version = "0.1",
     kw...,
 )
@@ -100,9 +102,9 @@ function response(
     res["termination_status"] = string(MOI.get(model, MOI.TerminationStatus()))
 
     options = if haskey(json, :options)
-        json.options
+        merge(json.options, params)
     else
-        JSON3.Object()
+        params
     end
 
     format = get(options, :print_format, nothing)
@@ -177,7 +179,13 @@ deserialize(body::String) = deserialize(Vector{UInt8}(body))
 
 # Internal version of `solve`. We do this to make handling keyword
 # arguments easier.
-function _solve(fn, json::Request, solver::MOI.AbstractOptimizer; kw...)
+function _solve(
+    fn,
+    json::Request,
+    solver::MOI.AbstractOptimizer,
+    params::Dict{Symbol,Any};
+    kw...,
+)
     errors = validate(json)
     isempty(errors) || return response(; errors)
 
@@ -191,9 +199,9 @@ function _solve(fn, json::Request, solver::MOI.AbstractOptimizer; kw...)
 
     try
         options = if haskey(json, :options)
-            json.options
+            merge(json.options, params)
         else
-            JSON3.Object()
+            params
         end
 
         set_options!(model, options)
@@ -202,7 +210,7 @@ function _solve(fn, json::Request, solver::MOI.AbstractOptimizer; kw...)
         if !Bool(get(options, :print_only, false))
             MOI.optimize!(model)
         end
-        return response(json, model, solver)
+        return response(json, model, solver, params)
     catch e
         _err(E) = response(Error(E, sprint(Base.showerror, e)))
         if e isa MOI.UnsupportedError
@@ -228,8 +236,8 @@ function _solve(fn, json::Request, solver::MOI.AbstractOptimizer; kw...)
         MOI.empty!(model)
     end
 end
-_solve(fn, request::Dict, solver::MOI.AbstractOptimizer; kw...) =
-    _solve(fn, JSON3.read(JSON3.write(request)), solver; kw...)
+_solve(fn, request::Dict, solver::MOI.AbstractOptimizer, params::Dict{Symbol,Any}; kw...) =
+    _solve(fn, JSON3.read(JSON3.write(request)), solver, params; kw...)
 
 """
     solve([fn], request::Request, solver::MOI.AbstractOptimizer; <kwargs>)::Response
@@ -244,6 +252,9 @@ gracefully and included in `Response`.
     the `MOI.ModelLike` model and should return `Nothing`.
   - `request`: A `SolverAPI.Request` specifying the optimization problem.
   - `solver`: A `MOI.AbstractOptimizer` to use to solve the problem.
+  - `params = Dict{Symbol,Any}()`: Parameters to pass to the
+    solver. This can be used with/instead of the `options` field in
+    `request`.
 
 ## Keyword Args
 
@@ -251,18 +262,28 @@ gracefully and included in `Response`.
   - `numerical_type=Float64`: The numerical type to use for the solver.
 """
 function solve(
-    fn,
+    fn::Function,
     request,
-    solver;
+    solver,
+    params = Dict{Symbol,Any}();
     use_indicator::Bool = true,
     numerical_type::Type{<:Real} = Float64,
 )
-    return _solve(fn, request, solver; use_indicator, numerical_type)
+    # We support passing `params` as `JSON3.Object`.
+    return _solve(
+        fn,
+        request,
+        solver,
+        convert(Dict{Symbol,Any}, params);
+        use_indicator,
+        numerical_type,
+    )
 end
-solve(request, solver; kw...) = solve(model -> nothing, request, solver; kw...)
+solve(request, solver, params = Dict{Symbol,Any}(); kw...) =
+    solve(model -> nothing, request, solver, params; kw...)
 
 """
-    print_model(request::Request; <kwargs>)::String
+    print_model(request::Request, format::String; <kwargs>)::String
     print_model(model::MOI.ModelLike, format::String)::String
 
 Print the `model`. `format` options (case-insensitive) are:
@@ -311,7 +332,8 @@ function print_model(model::MOI.ModelLike, format::String)
     return sprint(write, dest)
 end
 function print_model(
-    request::Request;
+    request::Request,
+    format::String;
     use_indicator::Bool = true,
     numerical_type::Type{<:Real} = Float64,
 )
@@ -320,9 +342,6 @@ function print_model(
         throw(CompositeException(errors))
     end
 
-    # Default to MOI format.
-    format = get(request.options, :print_format, "MOI")
-
     solver_info =
         Dict{Symbol,Any}(:use_indicator => use_indicator, :numerical_type => numerical_type)
     model = MOI.Utilities.Model{numerical_type}()
@@ -330,7 +349,8 @@ function print_model(
     load!(model, request, solver_info)
     return print_model(model, format)
 end
-print_model(request::Dict; kw...) = print_model(JSON3.read(JSON3.write(request)); kw...)
+print_model(request::Dict, format::String; kw...) =
+    print_model(JSON3.read(JSON3.write(request)), format; kw...)
 
 # Internal
 # ========================================================================================
@@ -414,7 +434,7 @@ function validate(json::Request)#::Vector{Error}
 end
 
 # Set solver options.
-function set_options!(model::MOI.ModelLike, options::JSON3.Object)#::Nothing
+function set_options!(model::MOI.ModelLike, options::Dict{Symbol,Any})#::Nothing
     if MOI.supports(model, MOI.TimeLimitSec())
         # Set time limit, defaulting to 5min.
         MOI.set(model, MOI.TimeLimitSec(), Float64(get(options, :time_limit_sec, 300.0)))
