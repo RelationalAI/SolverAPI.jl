@@ -193,10 +193,7 @@ end
         ),
     )
 
-    result = solve(
-        tiny_min,
-        HiGHS.Optimizer()
-    )
+    result = solve(tiny_min, HiGHS.Optimizer())
 
     @test result["termination_status"] == "OPTIMIZE_NOT_CALLED"
     @test result["model_string"] isa String
@@ -221,11 +218,7 @@ end
         ),
     )
 
-    result = solve(
-        tiny_min,
-        HiGHS.Optimizer(),
-        Dict{Symbol,Any}(:print_only => true)
-    )
+    result = solve(tiny_min, HiGHS.Optimizer(), Dict{Symbol,Any}(:print_only => true))
 
     @test result["termination_status"] == "OPTIMIZE_NOT_CALLED"
     @test result["model_string"] isa String
