@@ -66,6 +66,8 @@ end
         "tiny_infeas",
         "simple_lp",
         "n_queens",
+        "n_queens_solution_limit_1",
+        "n_queens_solution_limit_3",
         "min_constant",
         "cons_true",
         "cons_false",
