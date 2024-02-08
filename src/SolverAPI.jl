@@ -400,7 +400,8 @@ function validate(json::Request)#::Vector{Error}
     end
 
     if haskey(json, :options)
-        for (T, k) in [(String, :print_format), (Number, :time_limit_sec)]
+        for (T, k) in
+            [(String, :print_format), (Number, :time_limit_sec), (Int, :solution_limit)]
             if haskey(json.options, k) && !isa(json.options[k], T)
                 _err("Invalid `options.$(k)` field. Must be of type `$(T)`.")
             end
@@ -440,6 +441,15 @@ function set_options!(model::MOI.ModelLike, options::Dict{Symbol,Any})#::Nothing
         MOI.set(model, MOI.TimeLimitSec(), Float64(get(options, :time_limit_sec, 300.0)))
     end
 
+    if MOI.supports(model, MOI.SolutionLimit()) && haskey(options, :solution_limit)
+        # Set solution limit
+        solution_limit = options[:solution_limit]
+        if solution_limit <= 0
+            throw(Error(NotAllowed, "Solution limit must be positive."))
+        end
+        MOI.set(model, MOI.SolutionLimit(), solution_limit)
+    end
+
     if MOI.supports(model, MOI.RelativeGapTolerance()) &&
        haskey(options, :relative_gap_tolerance)
         # Set relative gap tolerance
@@ -447,7 +457,6 @@ function set_options!(model::MOI.ModelLike, options::Dict{Symbol,Any})#::Nothing
         if rel_gap_tol < 0 || rel_gap_tol > 1
             throw(Error(NotAllowed, "Relative gap tolerance must be within [0,1]."))
         end
-
         MOI.set(model, MOI.RelativeGapTolerance(), rel_gap_tol)
     end
 
@@ -458,7 +467,6 @@ function set_options!(model::MOI.ModelLike, options::Dict{Symbol,Any})#::Nothing
         if abs_gap_tol < 0
             throw(Error(NotAllowed, "Absolute gap tolerance must be non-negative."))
         end
-
         MOI.set(model, MOI.AbsoluteGapTolerance(), abs_gap_tol)
     end
 
@@ -468,6 +476,7 @@ function set_options!(model::MOI.ModelLike, options::Dict{Symbol,Any})#::Nothing
             :print_format,
             :print_only,
             :time_limit_sec,
+            :solution_limit,
             :relative_gap_tolerance,
             :absolute_gap_tolerance,
         ]
